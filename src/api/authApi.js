@@ -9,8 +9,7 @@ export async function loginRequest({ email, password }) {
 export async function logoutRequest() {
     try {
         await axiosClient.post('/auth/logout');
-    } catch {
-    }
+    } catch { /* empty */ }
 }
 
 export async function getCurrentUserRequest() {
