@@ -1,42 +1,36 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { getToken, setToken as saveToken, clearToken } from '../api/tokenStorage';
-import { loginRequest, logoutRequest, getCurrentUserRequest } from '../api/authApi';
+import { createContext, useContext, useState } from 'react';
+import {
+    getToken,
+    setToken as saveToken,
+    clearToken,
+    getStoredUser,
+    setStoredUser,
+} from '../api/tokenStorage';
+import { loginRequest, registerRequest } from '../api/authApi';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState(() => {
+        const token = getToken();
+        return token ? getStoredUser() : null;
+    });
+    const [isLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const token = getToken();
-
-        if (!token) {
-            setIsLoading(false);
-            return;
-        }
-
-        getCurrentUserRequest()
-            .then((currentUser) => {
-                setUser(currentUser);
-            })
-            .catch(() => {
-                // Token inválido o expirado: limpiamos.
-                clearToken();
-                setUser(null);
-            })
-            .finally(() => {
-                setIsLoading(false);
-            });
-    }, []);
+    function applyAuthResponse(data) {
+        const loggedUser = { email: data.email, role: data.role };
+        saveToken(data.token);
+        setStoredUser(loggedUser);
+        setUser(loggedUser);
+        return loggedUser;
+    }
 
     async function login({ email, password }) {
         setError(null);
         try {
-            const { token, user: loggedUser } = await loginRequest({ email, password });
-            saveToken(token);
-            setUser(loggedUser);
+            const data = await loginRequest({ email, password });
+            applyAuthResponse(data);
             return { success: true };
         } catch (err) {
             const message =
@@ -47,8 +41,22 @@ export function AuthProvider({ children }) {
         }
     }
 
-    async function logout() {
-        await logoutRequest();
+    async function register({ name, email, password }) {
+        setError(null);
+        try {
+            const data = await registerRequest({ name, email, password });
+            applyAuthResponse(data);
+            return { success: true };
+        } catch (err) {
+            const message =
+                err.response?.data?.message ||
+                'No se pudo completar el registro.';
+            setError(message);
+            return { success: false, message };
+        }
+    }
+
+    function logout() {
         clearToken();
         setUser(null);
     }
@@ -59,6 +67,7 @@ export function AuthProvider({ children }) {
         isLoading,
         error,
         login,
+        register,
         logout,
     };
 
