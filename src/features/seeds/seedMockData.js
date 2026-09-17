@@ -1,0 +1,58 @@
+export const MOCK_SUPPLIERS = [
+    { id: 1, name: 'Agroinsumos del Valle' },
+    { id: 2, name: 'Semillas Andinas S.A.S' },
+    { id: 3, name: 'Vivero El Progreso' },
+];
+
+export const MOCK_SEEDS = [
+    {
+        id: 1,
+        plantName: 'Tomate',
+        variety: 'Cherry',
+        supplierId: 1,
+        quantity: 150,
+        acquisitionDate: '2026-08-10',
+        expirationDate: '2027-02-10',
+        notes: 'Lote revisado sin novedades.',
+    },
+    {
+        id: 2,
+        plantName: 'Lechuga',
+        variety: 'Crespa verde',
+        supplierId: 2,
+        quantity: 0,
+        acquisitionDate: '2026-06-01',
+        expirationDate: '2026-10-01',
+        notes: 'Agotado, pendiente reabastecer.',
+    },
+    {
+        id: 3,
+        plantName: 'Pimentón',
+        variety: 'California Wonder',
+        supplierId: 3,
+        quantity: 80,
+        acquisitionDate: '2026-09-05',
+        expirationDate: '2027-03-05',
+        notes: '',
+    },
+    {
+        id: 4,
+        plantName: 'Cilantro',
+        variety: 'Común',
+        supplierId: 1,
+        quantity: 320,
+        acquisitionDate: '2026-07-20',
+        expirationDate: '2026-12-20',
+        notes: 'Alta rotación.',
+    },
+    {
+        id: 5,
+        plantName: 'Zanahoria',
+        variety: 'Nantesa',
+        supplierId: 2,
+        quantity: 45,
+        acquisitionDate: '2026-05-15',
+        expirationDate: '2026-11-15',
+        notes: 'Guardar en lugar fresco.',
+    },
+];
