@@ -1,5 +1,10 @@
 import axiosClient from '../../api/axiosClient';
 
+export async function getAllSeeds() {
+    const { data } = await axiosClient.get('/seeds');
+    return data; // [{ id, plantName, variety, supplierId, quantity, acquisitionDate, expirationDate, notes }, ...]
+}
+
 export async function getSeedById(id) {
     const { data } = await axiosClient.get(`/seeds/${id}`);
     return data;
