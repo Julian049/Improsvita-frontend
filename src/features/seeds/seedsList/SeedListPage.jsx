@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllSeeds, getSuppliers } from './seedApi';
+import { getAllSeeds, getSuppliers } from '../seedApi.js';
 import {
     SEED_FILTERS_INITIAL_STATE,
     SORT_OPTIONS,

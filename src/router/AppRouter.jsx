@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import ProtectedRoute from '../components/routing/ProtectedRoute';
 import LoginPage from '../features/auth/LoginPage';
-import SeedFormPage from '../features/seeds/SeedFormPage';
-import SeedListPage from "../features/seeds/SeedListPage.jsx";
+import SeedFormPage from '../features/seeds/seedsForm/SeedFormPage.jsx';
+import SeedListPage from "../features/seeds/seedsList/SeedListPage.jsx";
 
 function Dashboard() {
     return <h1>Panel principal</h1>;

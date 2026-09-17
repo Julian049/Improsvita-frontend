@@ -5,8 +5,8 @@ import {
     getSeedById,
     getSuppliers,
     updateSeed,
-} from './seedApi';
-import { FIELD_LABELS, SEED_FORM_INITIAL_VALUES, validateSeedForm } from './seedValidation';
+} from '../seedApi.js';
+import { FIELD_LABELS, SEED_FORM_INITIAL_VALUES, validateSeedForm } from '../seedValidation.js';
 import './SeedForm.css';
 
 function SeedFormPage() {
