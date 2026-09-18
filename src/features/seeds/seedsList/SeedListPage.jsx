@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllSeeds, getSuppliers } from '../seedApi.js';
+import { deleteSeed, getAllSeeds, getSuppliers } from '../seedApi';
 import {
     SEED_FILTERS_INITIAL_STATE,
     SORT_OPTIONS,
@@ -8,7 +8,8 @@ import {
     paginateSeeds,
     searchSeeds,
     sortSeeds,
-} from './seedListUtils.js';
+} from './seedListUtils';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import './SeedList.css';
 
 function formatDate(dateString) {
@@ -28,6 +29,10 @@ function SeedListPage() {
     const [sortBy, setSortBy] = useState('acquisition_desc');
     const [page, setPage] = useState(1);
     const [showFilters, setShowFilters] = useState(false);
+
+    const [seedPendingDelete, setSeedPendingDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteFeedback, setDeleteFeedback] = useState(null);
 
     useEffect(() => {
         Promise.all([getAllSeeds(), getSuppliers()])
@@ -76,6 +81,53 @@ function SeedListPage() {
         setFilters(SEED_FILTERS_INITIAL_STATE);
         setSearchText('');
         setPage(1);
+    }
+
+    function handleRequestDelete(seed) {
+        setDeleteFeedback(null);
+        setSeedPendingDelete(seed);
+    }
+
+
+    function handleCancelDelete() {
+        setSeedPendingDelete(null);
+    }
+
+    async function handleConfirmDelete() {
+        if (!seedPendingDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await deleteSeed(seedPendingDelete.id);
+
+            setSeeds((prev) => prev.filter((s) => s.id !== seedPendingDelete.id));
+            setDeleteFeedback({ type: 'success', text: 'Semilla eliminada exitosamente.' }); // MSJ10
+            setSeedPendingDelete(null);
+        } catch (err) {
+            const status = err.response?.status;
+
+            if (status === 404) {
+                setDeleteFeedback({
+                    type: 'error',
+                    text: 'La semilla seleccionada no existe o ya fue eliminada.',
+                });
+                setSeeds((prev) => prev.filter((s) => s.id !== seedPendingDelete.id));
+            } else if (status === 409) {
+                setDeleteFeedback({
+                    type: 'error',
+                    text:
+                        'No es posible eliminar la semilla porque está asociada a siembras, plántulas o reservas activas.',
+                });
+            } else {
+                setDeleteFeedback({
+                    type: 'error',
+                    text: 'Error al eliminar la semilla. Intente nuevamente o contacte al administrador.',
+                });
+            }
+            setSeedPendingDelete(null);
+        } finally {
+            setIsDeleting(false);
+        }
     }
 
     const hasActiveFilters =
@@ -136,6 +188,12 @@ function SeedListPage() {
                     + Registrar semilla
                 </Link>
             </div>
+
+            {deleteFeedback && (
+                <div className={`seed-list-message ${deleteFeedback.type}`}>
+                    {deleteFeedback.text}
+                </div>
+            )}
 
             {showFilters && (
                 <div className="seed-filters-panel">
@@ -244,9 +302,18 @@ function SeedListPage() {
                                     <td>{formatDate(seed.acquisitionDate)}</td>
                                     <td>{formatDate(seed.expirationDate)}</td>
                                     <td>
-                                        <Link to={`/seeds/${seed.id}/edit`} className="seed-action-link">
-                                            Editar
-                                        </Link>
+                                        <div className="seed-row-actions">
+                                            <Link to={`/seeds/${seed.id}/edit`} className="seed-action-link">
+                                                Editar
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                className="seed-action-link danger"
+                                                onClick={() => handleRequestDelete(seed)}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -276,6 +343,25 @@ function SeedListPage() {
                         </button>
                     </div>
                 </>
+            )}
+
+            {seedPendingDelete && (
+                <ConfirmDialog
+                    title="Eliminar semilla"
+                    message={`¿Estás seguro de que deseas eliminar esta semilla? Esta acción no se puede deshacer.`}
+                    details={
+                        <>
+                            <strong>{seedPendingDelete.plantName}</strong> — {seedPendingDelete.variety}
+                            <br />
+                            Cantidad disponible: {seedPendingDelete.quantity}
+                        </>
+                    }
+                    confirmLabel="Eliminar"
+                    isDangerous
+                    isConfirming={isDeleting}
+                    onConfirm={handleConfirmDelete}
+                    onCancel={handleCancelDelete}
+                />
             )}
         </div>
     );

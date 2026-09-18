@@ -42,6 +42,16 @@ export async function updateSeed(id, payload) {
     return data;
 }
 
+export async function deleteSeed(id) {
+    if (USE_MOCK_DATA) {
+        console.log('[MOCK] deleteSeed', id);
+        return Promise.resolve({ success: true });
+    }
+
+    const { data } = await axiosClient.delete(`/seeds/${id}`);
+    return data;
+}
+
 export async function getSuppliers() {
     if (USE_MOCK_DATA) return Promise.resolve(MOCK_SUPPLIERS);
 

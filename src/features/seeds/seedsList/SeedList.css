@@ -35,6 +35,12 @@
     border-color: #f5c6c2;
 }
 
+.seed-list-message.success {
+    color: #2e7d32;
+    background: #e8f5e9;
+    border-color: #c8e6c9;
+}
+
 .seed-link-button {
     background: none;
     border: none;
@@ -146,15 +152,29 @@
     color: #b3261e;
 }
 
+.seed-row-actions {
+    display: flex;
+    gap: 12px;
+}
+
 .seed-action-link {
     color: #2e7d32;
     font-weight: 600;
     text-decoration: none;
     font-size: 13px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
 }
 
 .seed-action-link:hover {
     text-decoration: underline;
+}
+
+.seed-action-link.danger {
+    color: #b3261e;
 }
 
 .seed-pagination {
