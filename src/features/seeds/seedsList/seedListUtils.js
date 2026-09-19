@@ -9,7 +9,7 @@ export function searchSeeds(seeds, searchText) {
     if (!normalized) return seeds;
 
     return seeds.filter((seed) => {
-        const haystack = [seed.plantName, seed.variety, seed.supplierName]
+        const haystack = [seed.name, seed.type, seed.supplierName]
             .filter(Boolean)
             .join(' ')
             .toLowerCase();
@@ -50,9 +50,9 @@ export function sortSeeds(seeds, sortBy) {
 
     switch (sortBy) {
         case 'name_asc':
-            return sorted.sort((a, b) => a.plantName.localeCompare(b.plantName));
+            return sorted.sort((a, b) => a.name.localeCompare(b.name));
         case 'name_desc':
-            return sorted.sort((a, b) => b.plantName.localeCompare(a.plantName));
+            return sorted.sort((a, b) => b.name.localeCompare(a.name));
         case 'quantity_asc':
             return sorted.sort((a, b) => Number(a.quantity) - Number(b.quantity));
         case 'quantity_desc':

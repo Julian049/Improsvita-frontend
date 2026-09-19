@@ -6,7 +6,12 @@ import {
     getSuppliers,
     updateSeed,
 } from '../seedApi.js';
-import { FIELD_LABELS, SEED_FORM_INITIAL_VALUES, validateSeedForm } from '../seedValidation.js';
+import {
+    FIELD_LABELS,
+    SEED_FORM_INITIAL_VALUES,
+    SEED_TYPE_OPTIONS,
+    validateSeedForm,
+} from '../seedValidation.js';
 import './SeedForm.css';
 
 function SeedFormPage() {
@@ -33,13 +38,12 @@ function SeedFormPage() {
         getSeedById(id)
             .then((seed) => {
                 setValues({
-                    plantName: seed.plantName || '',
-                    variety: seed.variety || '',
+                    name: seed.name || '',
+                    type: seed.type || '',
                     supplierId: seed.supplierId ? String(seed.supplierId) : '',
                     quantity: seed.quantity ? String(seed.quantity) : '',
                     acquisitionDate: seed.acquisitionDate || '',
                     expirationDate: seed.expirationDate || '',
-                    notes: seed.notes || '',
                 });
             })
             .catch(() => {
@@ -77,13 +81,12 @@ function SeedFormPage() {
         }
 
         const payload = {
-            plantName: values.plantName.trim(),
-            variety: values.variety.trim(),
+            name: values.name.trim(),
+            type: values.type,
             supplierId: values.supplierId,
             quantity: Number(values.quantity),
             acquisitionDate: values.acquisitionDate,
             expirationDate: values.expirationDate || null,
-            notes: values.notes.trim(),
         };
 
         setIsSubmitting(true);
@@ -125,27 +128,28 @@ function SeedFormPage() {
                 <form onSubmit={handleSubmit} className="seed-form" noValidate>
                     <div className="seed-form-row">
                         <label className="seed-field">
-                            <span>Nombre de la planta *</span>
+                            <span>Nombre de la semilla *</span>
                             <input
                                 type="text"
                                 maxLength={50}
-                                value={values.plantName}
-                                onChange={handleChange('plantName')}
-                                placeholder="Ej. Tomate"
+                                value={values.name}
+                                onChange={handleChange('name')}
+                                placeholder="Ej. Tomate Cherry"
                             />
-                            {errors.plantName && <small className="field-error">{errors.plantName}</small>}
+                            {errors.name && <small className="field-error">{errors.name}</small>}
                         </label>
 
                         <label className="seed-field">
-                            <span>Variedad *</span>
-                            <input
-                                type="text"
-                                maxLength={50}
-                                value={values.variety}
-                                onChange={handleChange('variety')}
-                                placeholder="Ej. Cherry"
-                            />
-                            {errors.variety && <small className="field-error">{errors.variety}</small>}
+                            <span>Tipo *</span>
+                            <select value={values.type} onChange={handleChange('type')}>
+                                <option value="">Selecciona un tipo</option>
+                                {SEED_TYPE_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.type && <small className="field-error">{errors.type}</small>}
                         </label>
                     </div>
 
@@ -205,18 +209,6 @@ function SeedFormPage() {
                         </label>
                     </div>
 
-                    <label className="seed-field">
-                        <span>Observaciones (opcional)</span>
-                        <textarea
-                            maxLength={200}
-                            rows={3}
-                            value={values.notes}
-                            onChange={handleChange('notes')}
-                            placeholder="Notas adicionales sobre esta semilla..."
-                        />
-                        {errors.notes && <small className="field-error">{errors.notes}</small>}
-                    </label>
-
                     {submitMessage && (
                         <div className={`seed-form-message ${submitMessage.type}`}>
                             {submitMessage.text}
@@ -235,8 +227,8 @@ function SeedFormPage() {
                             {isSubmitting
                                 ? 'Guardando...'
                                 : isEditing
-                                ? 'Guardar cambios'
-                                : 'Registrar'}
+                                    ? 'Guardar cambios'
+                                    : 'Registrar'}
                         </button>
                     </div>
                 </form>

@@ -1,60 +1,61 @@
 import axiosClient from '../../api/axiosClient';
-import { MOCK_SEEDS, MOCK_SUPPLIERS } from './seedMockData';
 
-//Esta linea es temporal, se mockea la vista
-//Cada bloque if tambien es temporal junto al import
-const USE_MOCK_DATA = true;
+function toIsoDateTime(dateOnlyString) {
+    if (!dateOnlyString) return null;
+    return `${dateOnlyString}T00:00:00`;
+}
+
+function toDateOnly(isoDateTimeString) {
+    if (!isoDateTimeString) return '';
+    return isoDateTimeString.slice(0, 10);
+}
+
+function fromSeedResponse(seed) {
+    return {
+        id: seed.id,
+        name: seed.name,
+        type: seed.type,
+        supplierId: seed.supplier ? String(seed.supplier.id) : '',
+        supplierName: seed.supplier ? seed.supplier.name : '',
+        quantity: seed.quantity,
+        acquisitionDate: toDateOnly(seed.acquisitionDate),
+        expirationDate: toDateOnly(seed.expirationDate),
+        active: seed.active,
+    };
+}
+
+function toSeedRequest(payload) {
+    return {
+        name: payload.name,
+        supplierId: Number(payload.supplierId),
+        quantity: Number(payload.quantity),
+        type: payload.type,
+        acquisitionDate: toIsoDateTime(payload.acquisitionDate),
+        expirationDate: toIsoDateTime(payload.expirationDate),
+    };
+}
 
 export async function getAllSeeds() {
-    if (USE_MOCK_DATA) return Promise.resolve(MOCK_SEEDS);
-    
     const { data } = await axiosClient.get('/seeds');
-    return data; // [{ id, plantName, variety, supplierId, quantity, acquisitionDate, expirationDate, notes }, ...]
+    return data.map(fromSeedResponse);
 }
 
 export async function getSeedById(id) {
-    if (USE_MOCK_DATA) {
-        const seed = MOCK_SEEDS.find((s) => String(s.id) === String(id));
-        return Promise.resolve(seed);
-    }
-
     const { data } = await axiosClient.get(`/seeds/${id}`);
-    return data;
+    return fromSeedResponse(data);
 }
 
 export async function createSeed(payload) {
-    if (USE_MOCK_DATA) {
-        console.log('[MOCK] createSeed payload:', payload);
-        return Promise.resolve({ id: Date.now(), ...payload });
-    }
-
-    const { data } = await axiosClient.post('/seeds', payload);
-    return data;
+    const { data } = await axiosClient.post('/seeds', toSeedRequest(payload));
+    return fromSeedResponse(data);
 }
 
 export async function updateSeed(id, payload) {
-    if (USE_MOCK_DATA) {
-        console.log('[MOCK] updateSeed', id, payload);
-        return Promise.resolve({ id, ...payload });
-    }
-
-    const { data } = await axiosClient.put(`/seeds/${id}`, payload);
-    return data;
-}
-
-export async function deleteSeed(id) {
-    if (USE_MOCK_DATA) {
-        console.log('[MOCK] deleteSeed', id);
-        return Promise.resolve({ success: true });
-    }
-
-    const { data } = await axiosClient.delete(`/seeds/${id}`);
-    return data;
+    const { data } = await axiosClient.put(`/seeds/${id}`, toSeedRequest(payload));
+    return fromSeedResponse(data);
 }
 
 export async function getSuppliers() {
-    if (USE_MOCK_DATA) return Promise.resolve(MOCK_SUPPLIERS);
-
     const { data } = await axiosClient.get('/suppliers');
-    return data; // [{ id, name }, ...]
+    return data; // [{ id, name, phone, email }, ...]
 }
