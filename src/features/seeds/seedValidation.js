@@ -1,11 +1,17 @@
 export const FIELD_LABELS = {
-    plantName: 'Nombre de la planta',
-    variety: 'Variedad',
+    name: 'Nombre de la semilla',
+    type: 'Tipo',
     supplierId: 'Proveedor',
     quantity: 'Cantidad',
     acquisitionDate: 'Fecha de adquisición',
     expirationDate: 'Fecha de vencimiento',
 };
+
+export const SEED_TYPE_OPTIONS = [
+    { value: 'HYBRID', label: 'Híbrida' },
+    { value: 'TRADITIONAL', label: 'Tradicional' },
+    { value: 'MODIFIED', label: 'Modificada' },
+];
 
 function isEmpty(value) {
     return value === undefined || value === null || String(value).trim() === '';
@@ -20,7 +26,7 @@ export function validateSeedForm(values, isEditing) {
     const errors = {};
     const emptyRequiredFields = [];
 
-    const requiredFields = ['plantName', 'variety', 'supplierId', 'quantity', 'acquisitionDate'];
+    const requiredFields = ['name', 'type', 'supplierId', 'quantity', 'acquisitionDate'];
     if (isEditing) requiredFields.push('expirationDate');
 
     requiredFields.forEach((field) => {
@@ -36,14 +42,8 @@ export function validateSeedForm(values, isEditing) {
         });
     }
 
-    if (!isEmpty(values.plantName) && values.plantName.length > 50) {
-        errors.plantName = 'Máximo 50 caracteres.';
-    }
-    if (!isEmpty(values.variety) && values.variety.length > 50) {
-        errors.variety = 'Máximo 50 caracteres.';
-    }
-    if (!isEmpty(values.notes) && values.notes.length > 200) {
-        errors.notes = 'Máximo 200 caracteres.';
+    if (!isEmpty(values.name) && values.name.length > 50) {
+        errors.name = 'Máximo 50 caracteres.';
     }
 
     if (!isEmpty(values.quantity)) {
@@ -79,11 +79,10 @@ export function validateSeedForm(values, isEditing) {
 }
 
 export const SEED_FORM_INITIAL_VALUES = {
-    plantName: '',
-    variety: '',
+    name: '',
+    type: '',
     supplierId: '',
     quantity: '',
     acquisitionDate: '',
     expirationDate: '',
-    notes: '',
 };
