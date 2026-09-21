@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './LoginPage.css';
 
@@ -71,6 +71,10 @@ function LoginPage() {
                         {isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
                     </button>
                 </form>
+
+                <p className="login-switch">
+                    ¿No tienes cuenta? <Link to="/register">Regístrate</Link>
+                </p>
             </div>
         </div>
     );

@@ -84,3 +84,33 @@
     background: #a5b8a6;
     cursor: not-allowed;
 }
+
+.field-error {
+    color: #b3261e;
+    font-size: 12px;
+}
+
+.login-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.login-switch {
+    margin: 16px 0 0;
+    text-align: center;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.login-switch a {
+    color: #2e7d32;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.login-switch a:hover {
+    text-decoration: underline;
+}
