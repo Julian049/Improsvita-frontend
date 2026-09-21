@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import ProtectedRoute from '../components/routing/ProtectedRoute';
 import LoginPage from '../features/auth/LoginPage';
+import RegisterPage from '../features/auth/RegisterPage';
 import SeedFormPage from '../features/seeds/seedsForm/SeedFormPage.jsx';
 import SeedListPage from "../features/seeds/seedsList/SeedListPage.jsx";
 
@@ -14,6 +15,7 @@ function AppRouter() {
         <BrowserRouter>
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
 
                 <Route element={<ProtectedRoute />}>
                     <Route path="/" element={<MainLayout />}>

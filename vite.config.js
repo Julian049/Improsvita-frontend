@@ -13,11 +13,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/improsvita/api': {
-        target: 'https://trusting-water-marital.ngrok-free.dev',
+        target: 'http://localhost:9010',
         changeOrigin: true,
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
       },
     },
   },
