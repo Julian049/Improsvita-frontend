@@ -12,7 +12,7 @@ function Sidebar() {
                 <NavLink to="/seeds">Semillas</NavLink>
                 <NavLink to="/plantings">Siembras</NavLink>
                 <NavLink to="/seedlings">Plántulas</NavLink>
-                <NavLink to="/contacts">Contactos</NavLink>
+                <NavLink to="/suppliers">Contactos</NavLink>
                 <NavLink to="/reservations">Reservas</NavLink>
                 <NavLink to="/sales">Ventas</NavLink>
             </nav>

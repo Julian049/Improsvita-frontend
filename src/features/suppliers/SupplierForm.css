@@ -1,0 +1,124 @@
+.supplier-form-page {
+    padding: 8px;
+}
+
+.supplier-form-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 720px;
+}
+
+.supplier-form-card h2 {
+    margin: 0 0 4px;
+}
+
+.supplier-form-subtitle {
+    color: #6b7280;
+    margin: 0 0 24px;
+    font-size: 14px;
+}
+
+.supplier-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.supplier-form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.supplier-form-row .supplier-field {
+    flex: 1;
+}
+
+.supplier-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.supplier-field input,
+.supplier-field select {
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #ffffff;
+}
+
+.supplier-field input:focus,
+.supplier-field select:focus {
+    outline: 2px solid #a7d7ac;
+    outline-offset: 1px;
+    border-color: #a7d7ac;
+}
+
+.field-error {
+    color: #b3261e;
+    font-size: 12px;
+}
+
+.supplier-form-message {
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.supplier-form-message.error {
+    background: #fdecea;
+    color: #b3261e;
+}
+
+.supplier-form-message.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.supplier-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.seed-button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.seed-button.primary {
+    background: #2e7d32;
+    color: #ffffff;
+}
+
+.seed-button.primary:hover:not(:disabled) {
+    background: #276b2b;
+}
+
+.seed-button.primary:disabled {
+    background: #a5b8a6;
+    cursor: not-allowed;
+}
+
+.seed-button.secondary {
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+}
+
+.seed-button.secondary:hover {
+    background: #f3f4f6;
+}
