@@ -5,6 +5,8 @@ import LoginPage from '../features/auth/LoginPage';
 import RegisterPage from '../features/auth/RegisterPage';
 import SeedFormPage from '../features/seeds/seedsForm/SeedFormPage.jsx';
 import SeedListPage from "../features/seeds/seedsList/SeedListPage.jsx";
+import SupplierListPage from '../features/suppliers/SupplierListPage';
+import SupplierFormPage from '../features/suppliers/SupplierFormPage';
 
 function Dashboard() {
     return <h1>Panel principal</h1>;
@@ -24,7 +26,8 @@ function AppRouter() {
                         <Route path="seeds" element={<SeedListPage />} />
                         <Route path="seeds/new" element={<SeedFormPage />} />
                         <Route path="seeds/:id/edit" element={<SeedFormPage />} />
-                        <Route path="contacts" element={<h1>Contactos</h1>} />
+                        <Route path="suppliers" element={<SupplierListPage />} />
+                        <Route path="suppliers/new" element={<SupplierFormPage />} />
                         <Route path="plantings" element={<h1>Siembras</h1>} />
                         <Route path="seedlings" element={<h1>Plántulas</h1>} />
                         <Route path="reservations" element={<h1>Reservas</h1>} />
