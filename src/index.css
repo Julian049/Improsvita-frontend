@@ -76,3 +76,27 @@ body {
 .content {
   padding: 32px;
 }
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.logout-button {
+  padding: 8px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #b3261e;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #fdecea;
+  border-color: #f5c6c2;
+}
