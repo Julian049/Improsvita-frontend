@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllSeeds, getSuppliers } from '../seedApi.js';
+import { getAllSeeds } from '../seedApi.js';
+import { getSuppliers } from '../../suppliers/supplierApi.js';
 import { SEED_TYPE_OPTIONS } from '../seedValidation.js';
+import { formatDate } from '../../../utils/dateUtils.js';
 import {
     SEED_FILTERS_INITIAL_STATE,
     SORT_OPTIONS,
@@ -16,12 +18,6 @@ const SEED_TYPE_LABELS = Object.fromEntries(
     SEED_TYPE_OPTIONS.map((option) => [option.value, option.label])
 );
 
-function formatDate(dateString) {
-    if (!dateString) return '—';
-    const [year, month, day] = dateString.split('-');
-    return `${day}/${month}/${year}`;
-}
-
 function SeedListPage() {
     const [seeds, setSeeds] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
@@ -30,7 +26,7 @@ function SeedListPage() {
 
     const [searchText, setSearchText] = useState('');
     const [filters, setFilters] = useState(SEED_FILTERS_INITIAL_STATE);
-    const [sortBy, setSortBy] = useState('acquisition_desc');
+    const [sortBy, setSortBy] = useState('name_asc');
     const [page, setPage] = useState(1);
     const [showFilters, setShowFilters] = useState(false);
 
@@ -41,24 +37,27 @@ function SeedListPage() {
                 setSuppliers(suppliersData);
             })
             .catch(() => {
-                setLoadError('No se pudo cargar el inventario de semillas.');
+                setLoadError('No se pudo cargar el catálogo de semillas.');
             })
             .finally(() => setIsLoading(false));
     }, []);
 
-    const seedsWithSupplierName = useMemo(() => {
-        const supplierNameById = new Map(suppliers.map((s) => [String(s.id), s.name]));
+    const seedsWithSupplierNames = useMemo(() => {
+        const nameById = new Map(suppliers.map((s) => [String(s.supplierId), s.name]));
         return seeds.map((seed) => ({
             ...seed,
-            supplierName: seed.supplierName || supplierNameById.get(String(seed.supplierId)) || '',
+            supplierNames:
+                seed.supplierNames.length > 0
+                    ? seed.supplierNames
+                    : seed.supplierIds.map((id) => nameById.get(String(id))).filter(Boolean),
         }));
     }, [seeds, suppliers]);
 
     const processedSeeds = useMemo(() => {
-        const searched = searchSeeds(seedsWithSupplierName, searchText);
+        const searched = searchSeeds(seedsWithSupplierNames, searchText);
         const filtered = filterSeeds(searched, filters);
         return sortSeeds(filtered, sortBy);
-    }, [seedsWithSupplierName, searchText, filters, sortBy]);
+    }, [seedsWithSupplierNames, searchText, filters, sortBy]);
 
     const { pageItems, totalPages, currentPage } = useMemo(
         () => paginateSeeds(processedSeeds, page),
@@ -84,11 +83,10 @@ function SeedListPage() {
     }
 
     const hasActiveFilters =
-        searchText.trim() !== '' ||
-        Object.values(filters).some((value) => value !== '');
+        searchText.trim() !== '' || Object.values(filters).some((value) => value !== '');
 
     if (isLoading) {
-        return <div className="seed-list-loading">Cargando inventario de semillas...</div>;
+        return <div className="seed-list-loading">Cargando catálogo de semillas...</div>;
     }
 
     if (loadError) {
@@ -98,7 +96,7 @@ function SeedListPage() {
     if (seeds.length === 0) {
         return (
             <div className="seed-list-empty">
-                <p>No existen semillas registradas en el inventario.</p>
+                <p>No existen semillas registradas en el catálogo.</p>
                 <Link to="/seeds/new" className="seed-button primary">
                     Registrar nueva semilla
                 </Link>
@@ -112,7 +110,7 @@ function SeedListPage() {
                 <input
                     type="text"
                     className="seed-search-input"
-                    placeholder="Buscar por nombre, variedad o proveedor..."
+                    placeholder="Buscar por nombre, descripción o proveedor..."
                     value={searchText}
                     onChange={handleSearchChange}
                 />
@@ -149,7 +147,7 @@ function SeedListPage() {
                         <select value={filters.supplierId} onChange={handleFilterChange('supplierId')}>
                             <option value="">Todos</option>
                             {suppliers.map((supplier) => (
-                                <option key={supplier.id} value={supplier.id}>
+                                <option key={supplier.supplierId} value={supplier.supplierId}>
                                     {supplier.name}
                                 </option>
                             ))}
@@ -157,48 +155,24 @@ function SeedListPage() {
                     </label>
 
                     <label className="seed-field">
-                        <span>Estado de stock</span>
-                        <select value={filters.stockStatus} onChange={handleFilterChange('stockStatus')}>
+                        <span>Tipo</span>
+                        <select value={filters.type} onChange={handleFilterChange('type')}>
                             <option value="">Todos</option>
-                            <option value="available">Disponible</option>
-                            <option value="out_of_stock">Agotado</option>
+                            {SEED_TYPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
                         </select>
                     </label>
 
                     <label className="seed-field">
-                        <span>Adquisición desde</span>
-                        <input
-                            type="date"
-                            value={filters.acquisitionFrom}
-                            onChange={handleFilterChange('acquisitionFrom')}
-                        />
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Adquisición hasta</span>
-                        <input
-                            type="date"
-                            value={filters.acquisitionTo}
-                            onChange={handleFilterChange('acquisitionTo')}
-                        />
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Vencimiento desde</span>
-                        <input
-                            type="date"
-                            value={filters.expirationFrom}
-                            onChange={handleFilterChange('expirationFrom')}
-                        />
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Vencimiento hasta</span>
-                        <input
-                            type="date"
-                            value={filters.expirationTo}
-                            onChange={handleFilterChange('expirationTo')}
-                        />
+                        <span>Estado</span>
+                        <select value={filters.active} onChange={handleFilterChange('active')}>
+                            <option value="">Todos</option>
+                            <option value="true">Activa</option>
+                            <option value="false">Inactiva</option>
+                        </select>
                     </label>
 
                     <button type="button" className="seed-button secondary" onClick={handleClearFilters}>
@@ -224,32 +198,28 @@ function SeedListPage() {
                             <tr>
                                 <th>Nombre</th>
                                 <th>Tipo</th>
-                                <th>Proveedor</th>
-                                <th>Cantidad</th>
-                                <th>F. adquisición</th>
-                                <th>F. vencimiento</th>
+                                <th>Descripción</th>
+                                <th>Proveedores</th>
+                                <th>Estado</th>
+                                <th>Creada</th>
                                 <th>Acciones</th>
                             </tr>
                             </thead>
                             <tbody>
                             {pageItems.map((seed) => (
-                                <tr key={seed.id}>
+                                <tr key={seed.seedId}>
                                     <td>{seed.name}</td>
                                     <td>{SEED_TYPE_LABELS[seed.type] || seed.type}</td>
-                                    <td>{seed.supplierName || '—'}</td>
+                                    <td>{seed.description || '—'}</td>
+                                    <td>{seed.supplierNames.join(', ') || '—'}</td>
                                     <td>
-                                            <span
-                                                className={`stock-badge ${
-                                                    Number(seed.quantity) > 0 ? 'available' : 'out'
-                                                }`}
-                                            >
-                                                {seed.quantity}
-                                            </span>
+                                        <span className={`stock-badge ${seed.active ? 'available' : 'out'}`}>
+                                            {seed.active ? 'Activa' : 'Inactiva'}
+                                        </span>
                                     </td>
-                                    <td>{formatDate(seed.acquisitionDate)}</td>
-                                    <td>{formatDate(seed.expirationDate)}</td>
+                                    <td>{formatDate(seed.createdDate)}</td>
                                     <td>
-                                        <Link to={`/seeds/${seed.id}/edit`} className="seed-action-link">
+                                        <Link to={`/seeds/${seed.seedId}/edit`} className="seed-action-link">
                                             Editar
                                         </Link>
                                     </td>
