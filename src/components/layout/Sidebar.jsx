@@ -10,6 +10,7 @@ function Sidebar() {
             <nav>
                 <NavLink to="/">Panel principal</NavLink>
                 <NavLink to="/seeds">Semillas</NavLink>
+                <NavLink to="/lots">Lotes</NavLink>
                 <NavLink to="/plantings">Siembras</NavLink>
                 <NavLink to="/seedlings">Plántulas</NavLink>
                 <NavLink to="/suppliers">Contactos</NavLink>

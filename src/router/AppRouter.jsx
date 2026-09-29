@@ -21,7 +21,7 @@ function AppRouter() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-                <Route element={<ProtectedRoute />}>
+                {/*<Route element={<ProtectedRoute />}>*/}
                     <Route path="/" element={<MainLayout />}>
                         <Route index element={<Dashboard />} />
 
@@ -40,7 +40,7 @@ function AppRouter() {
 
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Route>
-                </Route>
+                {/*</Route>*/}
             </Routes>
         </BrowserRouter>
     );
