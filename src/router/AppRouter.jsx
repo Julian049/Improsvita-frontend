@@ -4,7 +4,9 @@ import ProtectedRoute from '../components/routing/ProtectedRoute';
 import LoginPage from '../features/auth/LoginPage';
 import RegisterPage from '../features/auth/RegisterPage';
 import SeedFormPage from '../features/seeds/seedsForm/SeedFormPage.jsx';
-import SeedListPage from "../features/seeds/seedsList/SeedListPage.jsx";
+import SeedListPage from '../features/seeds/seedsList/SeedListPage.jsx';
+import LotFormPage from '../features/lots/lotsForm/LotFormPage.jsx';
+import LotListPage from '../features/lots/lotsList/LotListPage.jsx';
 import SupplierListPage from '../features/suppliers/SupplierListPage';
 import SupplierFormPage from '../features/suppliers/SupplierFormPage';
 
@@ -26,6 +28,9 @@ function AppRouter() {
                         <Route path="seeds" element={<SeedListPage />} />
                         <Route path="seeds/new" element={<SeedFormPage />} />
                         <Route path="seeds/:id/edit" element={<SeedFormPage />} />
+                        <Route path="lots" element={<LotListPage />} />
+                        <Route path="lots/new" element={<LotFormPage />} />
+                        <Route path="lots/:id/edit" element={<LotFormPage />} />
                         <Route path="suppliers" element={<SupplierListPage />} />
                         <Route path="suppliers/new" element={<SupplierFormPage />} />
                         <Route path="plantings" element={<h1>Siembras</h1>} />
