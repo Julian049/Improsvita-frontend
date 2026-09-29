@@ -9,8 +9,7 @@ import {
     getLotStatusLabel,
     validateLotForm,
 } from '../lotValidation.js';
-import '../../seeds/seedsForm/SeedForm.css';
-import '../../seeds/seedsForm/SeedFormExtras.css';
+import './LotForm.css';
 
 function LotFormPage() {
     const { id } = useParams();
@@ -106,7 +105,7 @@ function LotFormPage() {
     }
 
     if (isLoading) {
-        return <div className="seed-form-loading">Cargando información del lote...</div>;
+        return <div className="lot-form-loading">Cargando información del lote...</div>;
     }
 
     const seedOptions = seeds.filter((s) => s.active || String(s.seedId) === values.seedId);
@@ -115,18 +114,18 @@ function LotFormPage() {
     );
 
     return (
-        <div className="seed-form-page">
-            <div className="seed-form-card">
+        <div className="lot-form-page">
+            <div className="lot-form-card">
                 <h2>{isEditing ? 'Modificar lote' : 'Registrar lote'}</h2>
-                <p className="seed-form-subtitle">
+                <p className="lot-form-subtitle">
                     {isEditing
                         ? 'Actualiza la información de este lote de semillas.'
                         : 'Registra un lote de una semilla del catálogo.'}
                 </p>
 
-                <form onSubmit={handleSubmit} className="seed-form" noValidate>
-                    <div className="seed-form-row">
-                        <label className="seed-field">
+                <form onSubmit={handleSubmit} className="lot-form" noValidate>
+                    <div className="lot-form-row">
+                        <label className="lot-field">
                             <span>Semilla *</span>
                             <select value={values.seedId} onChange={handleChange('seedId')}>
                                 <option value="">Selecciona una semilla</option>
@@ -139,7 +138,7 @@ function LotFormPage() {
                             {errors.seedId && <small className="field-error">{errors.seedId}</small>}
                         </label>
 
-                        <label className="seed-field">
+                        <label className="lot-field">
                             <span>Ubicación *</span>
                             <select value={values.locationId} onChange={handleChange('locationId')}>
                                 <option value="">Selecciona una ubicación</option>
@@ -155,8 +154,8 @@ function LotFormPage() {
                         </label>
                     </div>
 
-                    <div className="seed-form-row">
-                        <label className="seed-field">
+                    <div className="lot-form-row">
+                        <label className="lot-field">
                             <span>Número de lote *</span>
                             <input
                                 type="number"
@@ -171,7 +170,7 @@ function LotFormPage() {
                             )}
                         </label>
 
-                        <label className="seed-field">
+                        <label className="lot-field">
                             <span>Cantidad inicial *</span>
                             <input
                                 type="number"
@@ -187,8 +186,8 @@ function LotFormPage() {
                         </label>
                     </div>
 
-                    <div className="seed-form-row">
-                        <label className="seed-field">
+                    <div className="lot-form-row">
+                        <label className="lot-field">
                             <span>Fecha de ingreso *</span>
                             <input
                                 type="date"
@@ -200,7 +199,7 @@ function LotFormPage() {
                             )}
                         </label>
 
-                        <label className="seed-field">
+                        <label className="lot-field">
                             <span>Fecha de vencimiento *</span>
                             <input
                                 type="date"
@@ -212,14 +211,14 @@ function LotFormPage() {
                     </div>
 
                     {isEditing && readOnlyInfo && (
-                        <div className="seed-form-row">
-                            <div className="seed-field">
+                        <div className="lot-form-row">
+                            <div className="lot-field">
                                 <span>Cantidad disponible</span>
-                                <div className="seed-field-readonly">{readOnlyInfo.availableQuantity}</div>
+                                <div className="lot-field-readonly">{readOnlyInfo.availableQuantity}</div>
                             </div>
-                            <div className="seed-field">
+                            <div className="lot-field">
                                 <span>Estado</span>
-                                <div className="seed-field-readonly">
+                                <div className="lot-field-readonly">
                                     {getLotStatusLabel(readOnlyInfo.status)}
                                 </div>
                             </div>
@@ -227,12 +226,12 @@ function LotFormPage() {
                     )}
 
                     {submitMessage && (
-                        <div className={`seed-form-message ${submitMessage.type}`}>
+                        <div className={`lot-form-message ${submitMessage.type}`}>
                             {submitMessage.text}
                         </div>
                     )}
 
-                    <div className="seed-form-actions">
+                    <div className="lot-form-actions">
                         <button
                             type="button"
                             className="seed-button secondary"

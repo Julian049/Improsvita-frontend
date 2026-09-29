@@ -14,7 +14,7 @@ import {
     searchLots,
     sortLots,
 } from './lotListUtils.js';
-import '../../seeds/seedsList/SeedList.css';
+import './LotList.css';
 
 function LotListPage() {
     const [lots, setLots] = useState([]);
@@ -90,16 +90,16 @@ function LotListPage() {
         searchText.trim() !== '' || Object.values(filters).some((value) => value !== '');
 
     if (isLoading) {
-        return <div className="seed-list-loading">Cargando inventario de lotes...</div>;
+        return <div className="lot-list-loading">Cargando inventario de lotes...</div>;
     }
 
     if (loadError) {
-        return <div className="seed-list-message error">{loadError}</div>;
+        return <div className="lot-list-message error">{loadError}</div>;
     }
 
     if (lots.length === 0) {
         return (
-            <div className="seed-list-empty">
+            <div className="lot-list-empty">
                 <p>No existen lotes registrados en el inventario.</p>
                 <Link to="/lots/new" className="seed-button primary">
                     Registrar nuevo lote
@@ -109,18 +109,18 @@ function LotListPage() {
     }
 
     return (
-        <div className="seed-list-page">
-            <div className="seed-list-toolbar">
+        <div className="lot-list-page">
+            <div className="lot-list-toolbar">
                 <input
                     type="text"
-                    className="seed-search-input"
+                    className="lot-search-input"
                     placeholder="Buscar por semilla, ubicación o número de lote..."
                     value={searchText}
                     onChange={handleSearchChange}
                 />
 
                 <select
-                    className="seed-sort-select"
+                    className="lot-sort-select"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                 >
@@ -145,8 +145,8 @@ function LotListPage() {
             </div>
 
             {showFilters && (
-                <div className="seed-filters-panel">
-                    <label className="seed-field">
+                <div className="lot-filters-panel">
+                    <label className="lot-field">
                         <span>Semilla</span>
                         <select value={filters.seedId} onChange={handleFilterChange('seedId')}>
                             <option value="">Todas</option>
@@ -158,7 +158,7 @@ function LotListPage() {
                         </select>
                     </label>
 
-                    <label className="seed-field">
+                    <label className="lot-field">
                         <span>Ubicación</span>
                         <select value={filters.locationId} onChange={handleFilterChange('locationId')}>
                             <option value="">Todas</option>
@@ -170,7 +170,7 @@ function LotListPage() {
                         </select>
                     </label>
 
-                    <label className="seed-field">
+                    <label className="lot-field">
                         <span>Estado del lote</span>
                         <select value={filters.status} onChange={handleFilterChange('status')}>
                             <option value="">Todos</option>
@@ -182,7 +182,7 @@ function LotListPage() {
                         </select>
                     </label>
 
-                    <label className="seed-field">
+                    <label className="lot-field">
                         <span>Stock</span>
                         <select value={filters.stockStatus} onChange={handleFilterChange('stockStatus')}>
                             <option value="">Todos</option>
@@ -191,22 +191,22 @@ function LotListPage() {
                         </select>
                     </label>
 
-                    <label className="seed-field">
+                    <label className="lot-field">
                         <span>Ingreso desde</span>
                         <input type="date" value={filters.entryFrom} onChange={handleFilterChange('entryFrom')} />
                     </label>
 
-                    <label className="seed-field">
+                    <label className="lot-field">
                         <span>Ingreso hasta</span>
                         <input type="date" value={filters.entryTo} onChange={handleFilterChange('entryTo')} />
                     </label>
 
-                    <label className="seed-field">
+                    <label className="lot-field">
                         <span>Vencimiento desde</span>
                         <input type="date" value={filters.dueFrom} onChange={handleFilterChange('dueFrom')} />
                     </label>
 
-                    <label className="seed-field">
+                    <label className="lot-field">
                         <span>Vencimiento hasta</span>
                         <input type="date" value={filters.dueTo} onChange={handleFilterChange('dueTo')} />
                     </label>
@@ -218,18 +218,18 @@ function LotListPage() {
             )}
 
             {processedLots.length === 0 ? (
-                <div className="seed-list-message">
+                <div className="lot-list-message">
                     No se encontraron lotes con los criterios especificados.
                     {hasActiveFilters && (
-                        <button type="button" className="seed-link-button" onClick={handleClearFilters}>
+                        <button type="button" className="lot-link-button" onClick={handleClearFilters}>
                             Limpiar búsqueda y filtros
                         </button>
                     )}
                 </div>
             ) : (
                 <>
-                    <div className="seed-table-wrapper">
-                        <table className="seed-table">
+                    <div className="lot-table-wrapper">
+                        <table className="lot-table">
                             <thead>
                             <tr>
                                 <th>Lote</th>
@@ -254,7 +254,7 @@ function LotListPage() {
                                     <td>{lot.initialQuantity}</td>
                                     <td>
                                         <span
-                                            className={`stock-badge ${
+                                            className={`lot-stock-badge ${
                                                 getStockStatus(lot) === 'available' ? 'available' : 'out'
                                             }`}
                                         >
@@ -263,7 +263,7 @@ function LotListPage() {
                                     </td>
                                     <td>{getLotStatusLabel(lot.status)}</td>
                                     <td>
-                                        <Link to={`/lots/${lot.lotId}/edit`} className="seed-action-link">
+                                        <Link to={`/lots/${lot.lotId}/edit`} className="lot-action-link">
                                             Editar
                                         </Link>
                                     </td>
@@ -273,7 +273,7 @@ function LotListPage() {
                         </table>
                     </div>
 
-                    <div className="seed-pagination">
+                    <div className="lot-pagination">
                         <button
                             type="button"
                             className="seed-button secondary"
