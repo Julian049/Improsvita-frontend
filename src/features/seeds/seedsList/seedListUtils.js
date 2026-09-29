@@ -1,15 +1,11 @@
 const PAGE_SIZE = 10;
 
-export function getStockStatus(seed) {
-    return Number(seed.quantity) > 0 ? 'available' : 'out_of_stock';
-}
-
 export function searchSeeds(seeds, searchText) {
     const normalized = searchText.trim().toLowerCase();
     if (!normalized) return seeds;
 
     return seeds.filter((seed) => {
-        const haystack = [seed.name, seed.type, seed.supplierName]
+        const haystack = [seed.name, seed.type, seed.description, seed.supplierNames.join(' ')]
             .filter(Boolean)
             .join(' ')
             .toLowerCase();
@@ -19,28 +15,11 @@ export function searchSeeds(seeds, searchText) {
 
 export function filterSeeds(seeds, filters) {
     return seeds.filter((seed) => {
-        if (filters.supplierId && String(seed.supplierId) !== String(filters.supplierId)) {
+        if (filters.supplierId && !seed.supplierIds.map(String).includes(String(filters.supplierId))) {
             return false;
         }
-
-        if (filters.stockStatus && getStockStatus(seed) !== filters.stockStatus) {
-            return false;
-        }
-
-        if (filters.acquisitionFrom && seed.acquisitionDate < filters.acquisitionFrom) {
-            return false;
-        }
-        if (filters.acquisitionTo && seed.acquisitionDate > filters.acquisitionTo) {
-            return false;
-        }
-
-        if (filters.expirationFrom && (!seed.expirationDate || seed.expirationDate < filters.expirationFrom)) {
-            return false;
-        }
-        if (filters.expirationTo && (!seed.expirationDate || seed.expirationDate > filters.expirationTo)) {
-            return false;
-        }
-
+        if (filters.type && seed.type !== filters.type) return false;
+        if (filters.active !== '' && String(seed.active) !== filters.active) return false;
         return true;
     });
 }
@@ -49,19 +28,15 @@ export function sortSeeds(seeds, sortBy) {
     const sorted = [...seeds];
 
     switch (sortBy) {
-        case 'name_asc':
-            return sorted.sort((a, b) => a.name.localeCompare(b.name));
         case 'name_desc':
             return sorted.sort((a, b) => b.name.localeCompare(a.name));
-        case 'quantity_asc':
-            return sorted.sort((a, b) => Number(a.quantity) - Number(b.quantity));
-        case 'quantity_desc':
-            return sorted.sort((a, b) => Number(b.quantity) - Number(a.quantity));
-        case 'acquisition_asc':
-            return sorted.sort((a, b) => a.acquisitionDate.localeCompare(b.acquisitionDate));
-        case 'acquisition_desc':
+        case 'created_asc':
+            return sorted.sort((a, b) => a.createdDate.localeCompare(b.createdDate));
+        case 'created_desc':
+            return sorted.sort((a, b) => b.createdDate.localeCompare(a.createdDate));
+        case 'name_asc':
         default:
-            return sorted.sort((a, b) => b.acquisitionDate.localeCompare(a.acquisitionDate));
+            return sorted.sort((a, b) => a.name.localeCompare(b.name));
     }
 }
 
@@ -79,18 +54,13 @@ export function paginateSeeds(seeds, page) {
 
 export const SEED_FILTERS_INITIAL_STATE = {
     supplierId: '',
-    stockStatus: '',
-    acquisitionFrom: '',
-    acquisitionTo: '',
-    expirationFrom: '',
-    expirationTo: '',
+    type: '',
+    active: '',
 };
 
 export const SORT_OPTIONS = [
-    { value: 'acquisition_desc', label: 'Fecha de adquisición (recientes primero)' },
-    { value: 'acquisition_asc', label: 'Fecha de adquisición (antiguas primero)' },
     { value: 'name_asc', label: 'Nombre (A-Z)' },
     { value: 'name_desc', label: 'Nombre (Z-A)' },
-    { value: 'quantity_desc', label: 'Cantidad (mayor a menor)' },
-    { value: 'quantity_asc', label: 'Cantidad (menor a mayor)' },
+    { value: 'created_desc', label: 'Fecha de creación (recientes primero)' },
+    { value: 'created_asc', label: 'Fecha de creación (antiguas primero)' },
 ];

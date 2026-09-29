@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-    createSeed,
-    getSeedById,
-    getSuppliers,
-    updateSeed,
-} from '../seedApi.js';
+import { createSeed, getSeedById, updateSeed } from '../seedApi.js';
+import { getSuppliers } from '../../suppliers/supplierApi.js';
 import {
     FIELD_LABELS,
     SEED_FORM_INITIAL_VALUES,
@@ -40,10 +36,9 @@ function SeedFormPage() {
                 setValues({
                     name: seed.name || '',
                     type: seed.type || '',
-                    supplierId: seed.supplierId ? String(seed.supplierId) : '',
-                    quantity: seed.quantity ? String(seed.quantity) : '',
-                    acquisitionDate: seed.acquisitionDate || '',
-                    expirationDate: seed.expirationDate || '',
+                    description: seed.description || '',
+                    supplierIds: seed.supplierIds.map(String),
+                    active: seed.active,
                 });
             })
             .catch(() => {
@@ -62,11 +57,22 @@ function SeedFormPage() {
         };
     }
 
+    function handleSupplierToggle(supplierId) {
+        const key = String(supplierId);
+        setValues((prev) => ({
+            ...prev,
+            supplierIds: prev.supplierIds.includes(key)
+                ? prev.supplierIds.filter((s) => s !== key)
+                : [...prev.supplierIds, key],
+        }));
+        setErrors((prev) => ({ ...prev, supplierIds: undefined }));
+    }
+
     async function handleSubmit(e) {
         e.preventDefault();
         setSubmitMessage(null);
 
-        const validationErrors = validateSeedForm(values, isEditing);
+        const validationErrors = validateSeedForm(values);
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
@@ -83,10 +89,9 @@ function SeedFormPage() {
         const payload = {
             name: values.name.trim(),
             type: values.type,
-            supplierId: values.supplierId,
-            quantity: Number(values.quantity),
-            acquisitionDate: values.acquisitionDate,
-            expirationDate: values.expirationDate || null,
+            description: values.description.trim(),
+            supplierIds: values.supplierIds,
+            ...(isEditing && { active: values.active }),
         };
 
         setIsSubmitting(true);
@@ -121,8 +126,8 @@ function SeedFormPage() {
                 <h2>{isEditing ? 'Modificar semilla' : 'Registrar semilla'}</h2>
                 <p className="seed-form-subtitle">
                     {isEditing
-                        ? 'Actualiza la información de esta semilla en el inventario.'
-                        : 'Completa los datos para agregar una nueva semilla al inventario.'}
+                        ? 'Actualiza la información de esta semilla del catálogo.'
+                        : 'Registra una semilla en el catálogo. Las cantidades y fechas se manejan por lote.'}
                 </p>
 
                 <form onSubmit={handleSubmit} className="seed-form" noValidate>
@@ -153,61 +158,51 @@ function SeedFormPage() {
                         </label>
                     </div>
 
-                    <div className="seed-form-row">
-                        <label className="seed-field">
-                            <span>Proveedor *</span>
-                            <select value={values.supplierId} onChange={handleChange('supplierId')}>
-                                <option value="">Selecciona un proveedor</option>
-                                {suppliers.map((supplier) => (
-                                    <option key={supplier.id} value={supplier.id}>
-                                        {supplier.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.supplierId && (
-                                <small className="field-error">{errors.supplierId}</small>
-                            )}
-                        </label>
+                    <label className="seed-field">
+                        <span>Descripción (opcional)</span>
+                        <textarea
+                            maxLength={255}
+                            value={values.description}
+                            onChange={handleChange('description')}
+                            placeholder="Variedad, características, observaciones..."
+                        />
+                        {errors.description && (
+                            <small className="field-error">{errors.description}</small>
+                        )}
+                    </label>
 
-                        <label className="seed-field">
-                            <span>Cantidad adquirida *</span>
-                            <input
-                                type="number"
-                                min="1"
-                                step="1"
-                                value={values.quantity}
-                                onChange={handleChange('quantity')}
-                                placeholder="Ej. 100"
-                            />
-                            {errors.quantity && <small className="field-error">{errors.quantity}</small>}
-                        </label>
+                    <div className="seed-field">
+                        <span>Proveedores *</span>
+                        <div className="seed-checkbox-group">
+                            {suppliers.length === 0 && <small>No hay proveedores disponibles.</small>}
+                            {suppliers.map((supplier) => (
+                                <label key={supplier.supplierId} className="seed-checkbox-option">
+                                    <input
+                                        type="checkbox"
+                                        checked={values.supplierIds.includes(String(supplier.supplierId))}
+                                        onChange={() => handleSupplierToggle(supplier.supplierId)}
+                                    />
+                                    {supplier.name}
+                                </label>
+                            ))}
+                        </div>
+                        {errors.supplierIds && (
+                            <small className="field-error">{errors.supplierIds}</small>
+                        )}
                     </div>
 
-                    <div className="seed-form-row">
-                        <label className="seed-field">
-                            <span>Fecha de adquisición *</span>
+                    {isEditing && (
+                        <label className="seed-checkbox-option">
                             <input
-                                type="date"
-                                value={values.acquisitionDate}
-                                onChange={handleChange('acquisitionDate')}
+                                type="checkbox"
+                                checked={values.active}
+                                onChange={(e) =>
+                                    setValues((prev) => ({ ...prev, active: e.target.checked }))
+                                }
                             />
-                            {errors.acquisitionDate && (
-                                <small className="field-error">{errors.acquisitionDate}</small>
-                            )}
+                            Semilla activa
                         </label>
-
-                        <label className="seed-field">
-                            <span>Fecha de vencimiento {isEditing ? '*' : '(opcional)'}</span>
-                            <input
-                                type="date"
-                                value={values.expirationDate}
-                                onChange={handleChange('expirationDate')}
-                            />
-                            {errors.expirationDate && (
-                                <small className="field-error">{errors.expirationDate}</small>
-                            )}
-                        </label>
-                    </div>
+                    )}
 
                     {submitMessage && (
                         <div className={`seed-form-message ${submitMessage.type}`}>

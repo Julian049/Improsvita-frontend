@@ -1,0 +1,213 @@
+.lot-list-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.lot-list-loading,
+.lot-list-empty {
+    padding: 32px;
+    color: #6b7280;
+}
+
+.lot-list-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.lot-list-message {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    color: #6b7280;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.lot-list-message.error {
+    color: #b3261e;
+    background: #fdecea;
+    border-color: #f5c6c2;
+}
+
+.lot-list-message.success {
+    color: #2e7d32;
+    background: #e8f5e9;
+    border-color: #c8e6c9;
+}
+
+.lot-link-button {
+    background: none;
+    border: none;
+    color: #2e7d32;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: 13px;
+}
+
+.lot-list-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.lot-search-input {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.lot-search-input:focus {
+    outline: 2px solid #a7d7ac;
+    outline-offset: 1px;
+    border-color: #a7d7ac;
+}
+
+.lot-sort-select {
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #ffffff;
+}
+
+.lot-filters-panel {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+
+.lot-table-wrapper {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow-x: auto;
+}
+
+.lot-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.lot-table th,
+.lot-table td {
+    text-align: left;
+    padding: 12px 16px;
+    white-space: nowrap;
+}
+
+.lot-table thead th {
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.lot-table tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.lot-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.lot-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.lot-stock-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.lot-stock-badge.available {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.lot-stock-badge.out {
+    background: #fdecea;
+    color: #b3261e;
+}
+
+.lot-row-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.lot-action-link {
+    color: #2e7d32;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 13px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+}
+
+.lot-action-link:hover {
+    text-decoration: underline;
+}
+
+.lot-action-link.danger {
+    color: #b3261e;
+}
+
+.lot-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    font-size: 14px;
+    color: #374151;
+}
+
+/* Campos del panel de filtros (en Seeds vienen de SeedForm.css) */
+.lot-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.lot-field input,
+.lot-field select {
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #ffffff;
+}
+
+.lot-field input:focus,
+.lot-field select:focus {
+    outline: 2px solid #a7d7ac;
+    outline-offset: 1px;
+    border-color: #a7d7ac;
+}

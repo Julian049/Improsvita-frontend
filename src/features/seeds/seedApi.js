@@ -1,37 +1,28 @@
 import axiosClient from '../../api/axiosClient';
-
-function toIsoDateTime(dateOnlyString) {
-    if (!dateOnlyString) return null;
-    return `${dateOnlyString}T00:00:00`;
-}
-
-function toDateOnly(isoDateTimeString) {
-    if (!isoDateTimeString) return '';
-    return isoDateTimeString.slice(0, 10);
-}
+import { toDateOnly } from '../../utils/dateUtils';
 
 function fromSeedResponse(seed) {
+    const suppliers = seed.suppliers ?? [];
     return {
-        id: seed.id,
+        seedId: seed.seedId,
         name: seed.name,
         type: seed.type,
-        supplierId: seed.supplier ? String(seed.supplier.id) : '',
-        supplierName: seed.supplier ? seed.supplier.name : '',
-        quantity: seed.quantity,
-        acquisitionDate: toDateOnly(seed.acquisitionDate),
-        expirationDate: toDateOnly(seed.expirationDate),
+        description: seed.description ?? '',
         active: seed.active,
+        createdDate: toDateOnly(seed.createdDate),
+        lastUpdated: toDateOnly(seed.lastUpdated),
+        supplierIds: seed.supplierIds ?? suppliers.map((s) => s.supplierId),
+        supplierNames: suppliers.map((s) => s.name),
     };
 }
 
 function toSeedRequest(payload) {
     return {
         name: payload.name,
-        supplierId: Number(payload.supplierId),
-        quantity: Number(payload.quantity),
         type: payload.type,
-        acquisitionDate: toIsoDateTime(payload.acquisitionDate),
-        expirationDate: toIsoDateTime(payload.expirationDate),
+        description: payload.description || null,
+        supplierIds: payload.supplierIds.map(Number),
+        ...(payload.active !== undefined && { active: payload.active }),
     };
 }
 
@@ -53,9 +44,4 @@ export async function createSeed(payload) {
 export async function updateSeed(id, payload) {
     const { data } = await axiosClient.put(`/seeds/${id}`, toSeedRequest(payload));
     return fromSeedResponse(data);
-}
-
-export async function getSuppliers() {
-    const { data } = await axiosClient.get('/suppliers');
-    return data; // [{ id, name, phone, email }, ...]
 }

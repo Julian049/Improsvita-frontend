@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getSuppliers } from './supplierApi';
+import { formatDate } from '../../utils/dateUtils';
 import './SupplierList.css';
 
 function SupplierListPage() {
@@ -11,12 +12,12 @@ function SupplierListPage() {
     useEffect(() => {
         getSuppliers()
             .then(setSuppliers)
-            .catch(() => setLoadError('No se pudo cargar la lista de contactos.'))
+            .catch(() => setLoadError('No se pudo cargar la lista de proveedores.'))
             .finally(() => setIsLoading(false));
     }, []);
 
     if (isLoading) {
-        return <div className="supplier-list-loading">Cargando contactos...</div>;
+        return <div className="supplier-list-loading">Cargando proveedores...</div>;
     }
 
     if (loadError) {
@@ -26,46 +27,46 @@ function SupplierListPage() {
     return (
         <div className="supplier-list-page">
             <div className="supplier-list-toolbar">
-                <h2>Contactos</h2>
+                <h2>Proveedores</h2>
                 <Link to="/suppliers/new" className="seed-button primary">
-                    + Añadir contacto
+                    + Añadir proveedor
                 </Link>
             </div>
 
             {suppliers.length === 0 ? (
-                <div className="supplier-list-message">No hay contactos registrados todavía.</div>
+                <div className="supplier-list-message">No hay proveedores registrados todavía.</div>
             ) : (
                 <div className="supplier-table-wrapper">
                     <table className="supplier-table">
                         <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Identificación</th>
-                                <th>Tipo</th>
-                                <th>Teléfono</th>
-                                <th>Correo</th>
-                                <th>Dirección</th>
-                            </tr>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Correo</th>
+                            <th>Estado</th>
+                            <th>Creado</th>
+                            <th>Actualizado</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            {suppliers.map((supplier) => (
-                                <tr key={supplier.id}>
-                                    <td>{supplier.name}</td>
-                                    <td>{supplier.identification}</td>
-                                    <td>
+                        {suppliers.map((supplier) => (
+                            <tr key={supplier.supplierId}>
+                                <td>{supplier.name}</td>
+                                <td>{supplier.phone}</td>
+                                <td>{supplier.email || '—'}</td>
+                                <td>
                                         <span
                                             className={`supplier-type-badge ${
-                                                supplier.supplierType === 'Proveedor' ? 'supplier' : 'client'
+                                                supplier.active ? 'supplier' : 'client'
                                             }`}
                                         >
-                                            {supplier.supplierType}
+                                            {supplier.active ? 'Activo' : 'Inactivo'}
                                         </span>
-                                    </td>
-                                    <td>{supplier.phone}</td>
-                                    <td>{supplier.email || '—'}</td>
-                                    <td>{supplier.address || '—'}</td>
-                                </tr>
-                            ))}
+                                </td>
+                                <td>{formatDate(supplier.createdDate)}</td>
+                                <td>{formatDate(supplier.lastUpdated)}</td>
+                            </tr>
+                        ))}
                         </tbody>
                     </table>
                 </div>
