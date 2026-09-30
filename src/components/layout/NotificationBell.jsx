@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useexpirationalerts } from '../../hooks/Useexpirationalerts.js';
+import { useExpirationAlerts } from '../../hooks/useExpirationAlerts';
 import { formatDate } from '../../utils/dateUtils';
 import './NotificationBell.css';
 
@@ -46,7 +46,7 @@ function AlertItem({ lot, onNavigate }) {
 }
 
 function NotificationBell() {
-    const { alerts, expiredCount, isLoading, error, refresh } = useexpirationalerts();
+    const { alerts, expiredCount, isLoading, error, refresh } = useExpirationAlerts();
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
 
