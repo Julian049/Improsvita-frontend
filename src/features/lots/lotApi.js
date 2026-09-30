@@ -1,5 +1,7 @@
 import axiosClient from '../../api/axiosClient';
-import { toDateOnly, toIsoDateTime } from '../../utils/dateUtils';
+import { toDateOnly, toIsoDateTime } from '../../utils/dateUtils';import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
+import { MOCK_SUPPLIERS } from '../../mocks/supplierMocks';
+import {MOCK_LOTS} from "../../mocks/lotMocks.js";
 
 function fromLotResponse(lot) {
     return {
@@ -29,6 +31,11 @@ function toLotRequest(payload) {
 }
 
 export async function getAllLots() {
+    if (MOCK_CONFIG.lots) {
+        await mockDelay();
+        return MOCK_LOTS;
+    }
+
     const { data } = await axiosClient.get('/lots');
     return data.map(fromLotResponse);
 }

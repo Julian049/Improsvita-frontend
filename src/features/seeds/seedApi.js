@@ -1,5 +1,7 @@
 import axiosClient from '../../api/axiosClient';
 import { toDateOnly } from '../../utils/dateUtils';
+import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
+import { MOCK_SEEDS } from '../../mocks/seedMocks';
 
 function fromSeedResponse(seed) {
     const suppliers = seed.suppliers ?? [];
@@ -27,6 +29,11 @@ function toSeedRequest(payload) {
 }
 
 export async function getAllSeeds() {
+    if (MOCK_CONFIG.seeds) {
+        await mockDelay();
+        return MOCK_SEEDS;
+    }
+
     const { data } = await axiosClient.get('/seeds');
     return data.map(fromSeedResponse);
 }

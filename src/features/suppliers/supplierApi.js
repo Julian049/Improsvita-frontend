@@ -1,5 +1,7 @@
 import axiosClient from '../../api/axiosClient';
 import { toDateOnly } from '../../utils/dateUtils';
+import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
+import { MOCK_SUPPLIERS } from '../../mocks/supplierMocks';
 
 function fromSupplierResponse(supplier) {
     return {
@@ -22,6 +24,11 @@ function toSupplierRequest(payload) {
 }
 
 export async function getSuppliers() {
+    if (MOCK_CONFIG.suppliers) {
+        await mockDelay();
+        return MOCK_SUPPLIERS;
+    }
+
     const { data } = await axiosClient.get('/suppliers');
     return data.map(fromSupplierResponse);
 }
