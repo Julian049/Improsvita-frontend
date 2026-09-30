@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 function Header() {
     const { user, logout } = useAuth();
@@ -15,6 +16,7 @@ function Header() {
             <h2>Improsvita</h2>
 
             <div className="header-user">
+                <NotificationBell />
                 <span>{user?.email || 'Administrador'}</span>
                 <button type="button" className="logout-button" onClick={handleLogout}>
                     Cerrar sesión
