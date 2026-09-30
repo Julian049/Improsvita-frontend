@@ -2,6 +2,7 @@ export const MOCK_CONFIG = {
     lots: true,
     seeds: true,
     suppliers: true,
+    locations: true,
 
     delayMs: 300,
 };
