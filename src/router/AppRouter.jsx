@@ -9,6 +9,7 @@ import LotFormPage from '../features/lots/lotsForm/LotFormPage.jsx';
 import LotListPage from '../features/lots/lotsList/LotListPage.jsx';
 import SupplierListPage from '../features/suppliers/SupplierListPage';
 import SupplierFormPage from '../features/suppliers/SupplierFormPage';
+import PlantingFormPage from '../features/plantings/plantingsForm/PlantingFormPage.jsx';
 
 function Dashboard() {
     return <h1>Panel principal</h1>;
@@ -34,6 +35,7 @@ function AppRouter() {
                         <Route path="suppliers" element={<SupplierListPage />} />
                         <Route path="suppliers/new" element={<SupplierFormPage />} />
                         <Route path="plantings" element={<h1>Siembras</h1>} />
+                        <Route path="plantings/new" element={<PlantingFormPage />} />
                         <Route path="seedlings" element={<h1>Plántulas</h1>} />
                         <Route path="reservations" element={<h1>Reservas</h1>} />
                         <Route path="sales" element={<h1>Ventas</h1>} />
