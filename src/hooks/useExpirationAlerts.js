@@ -1,17 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { MOCK_NOTIFICATION_ALERTS } from './notificationMocks';
 import { getAllLots } from '../features/lots/lotApi';
 import { getAllSeeds } from '../features/seeds/seedApi';
 import { ALERT_LEVELS, getExpirationStatus } from '../utils/expirationStatus';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const USE_MOCKS = true;
 
 async function fetchLotsWithSeedNames() {
-    const [lotsData, seedsData] = await Promise.all([getAllLots(), getAllSeeds()]);
-    const seedNameById = new Map(seedsData.map((s) => [String(s.seedId), s.name]));
-    return lotsData.map((lot) => ({
-        ...lot,
-        seedName: lot.seedName || seedNameById.get(String(lot.seedId)) || 'Semilla sin nombre',
-    }));
+    let apiLots = [];
+
+    try {
+        const [lotsData, seedsData] = await Promise.all([getAllLots(), getAllSeeds()]);
+        const seedNameById = new Map(seedsData.map((s) => [String(s.seedId), s.name]));
+
+        apiLots = lotsData.map((lot) => ({
+            ...lot,
+            seedName: lot.seedName || seedNameById.get(String(lot.seedId)) || 'Semilla sin nombre',
+        }));
+    } catch (err) {
+        if (!USE_MOCKS) throw err;
+    }
+
+    return USE_MOCKS ? [...apiLots, ...MOCK_NOTIFICATION_ALERTS] : apiLots;
 }
 
 export function useExpirationAlerts() {
