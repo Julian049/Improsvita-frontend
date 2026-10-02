@@ -160,7 +160,6 @@ function PlantingListPage() {
             <div className="planting-head">
                 <div>
                     <h1>Siembras</h1>
-                    <p>Sigue cada siembra desde que se planta hasta que germina.</p>
                 </div>
                 <Link to="/plantings/new" className="seed-button primary">
                     + Registrar siembra
