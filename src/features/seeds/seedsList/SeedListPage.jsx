@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getAllSeeds } from '../seedApi.js';
-import { getSuppliers } from '../../suppliers/supplierApi.js';
-import { SEED_TYPE_OPTIONS } from '../seedValidation.js';
-import { formatDate } from '../../../utils/dateUtils.js';
+import {useEffect, useMemo, useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import {getAllSeeds} from '../seedApi.js';
+import {getSuppliers} from '../../suppliers/supplierApi';
+import {getAllLots} from '../../lots/lotApi.js';
+import {SEED_TYPE_OPTIONS} from '../seedValidation.js';
+import {daysUntil} from '../../../utils/daysUntil';
 import {
     SEED_FILTERS_INITIAL_STATE,
     SORT_OPTIONS,
@@ -12,15 +13,25 @@ import {
     searchSeeds,
     sortSeeds,
 } from './seedListUtils.js';
+import {SeedCard} from './SeedCard';
+import {SeedDetailModal} from './SeedDetailModal';
 import './SeedList.css';
 
 const SEED_TYPE_LABELS = Object.fromEntries(
     SEED_TYPE_OPTIONS.map((option) => [option.value, option.label])
 );
 
-function SeedListPage() {
+const EXPIRING_DAYS = 30;
+
+const sumStock = (lots) => lots.reduce((total, lot) => total + (Number(lot.availableQuantity) || 0), 0);
+
+export const SeedListPage = () => {
+    const navigate = useNavigate();
+
     const [seeds, setSeeds] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [lots, setLots] = useState([]);
+    const [lotsLoaded, setLotsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
 
@@ -28,13 +39,22 @@ function SeedListPage() {
     const [filters, setFilters] = useState(SEED_FILTERS_INITIAL_STATE);
     const [sortBy, setSortBy] = useState('name_asc');
     const [page, setPage] = useState(1);
-    const [showFilters, setShowFilters] = useState(false);
+    const [selectedSeedId, setSelectedSeedId] = useState(null);
 
     useEffect(() => {
-        Promise.all([getAllSeeds(), getSuppliers()])
-            .then(([seedsData, suppliersData]) => {
+        Promise.all([
+            getAllSeeds(),
+            getSuppliers(),
+            getAllLots().then(
+                (data) => ({data, ok: true}),
+                () => ({data: [], ok: false})
+            ),
+        ])
+            .then(([seedsData, suppliersData, lotsResult]) => {
                 setSeeds(seedsData);
                 setSuppliers(suppliersData);
+                setLots(lotsResult.data);
+                setLotsLoaded(lotsResult.ok);
             })
             .catch(() => {
                 setLoadError('No se pudo cargar el catálogo de semillas.');
@@ -53,22 +73,55 @@ function SeedListPage() {
         }));
     }, [seeds, suppliers]);
 
+    const lotsBySeed = useMemo(() => {
+        const map = new Map();
+        lots.forEach((lot) => {
+            const key = String(lot.seedId);
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(lot);
+        });
+        return map;
+    }, [lots]);
+    useMemo(
+        () =>
+            lots.filter((lot) => {
+                const days = daysUntil(lot.dueDate);
+                return (
+                    (Number(lot.availableQuantity) || 0) > 0 &&
+                    days !== null &&
+                    days >= 0 &&
+                    days <= EXPIRING_DAYS
+                );
+            }).length,
+        [lots]
+    );
+    useMemo(() => {
+        const active = seeds.filter((seed) => seed.active).length;
+        return {total: seeds.length, active, inactive: seeds.length - active};
+    }, [seeds]);
     const processedSeeds = useMemo(() => {
         const searched = searchSeeds(seedsWithSupplierNames, searchText);
         const filtered = filterSeeds(searched, filters);
         return sortSeeds(filtered, sortBy);
     }, [seedsWithSupplierNames, searchText, filters, sortBy]);
 
-    const { pageItems, totalPages, currentPage } = useMemo(
+    const {pageItems, totalPages, currentPage} = useMemo(
         () => paginateSeeds(processedSeeds, page),
         [processedSeeds, page]
     );
 
+    const selectedSeed = selectedSeedId
+        ? seedsWithSupplierNames.find((seed) => String(seed.seedId) === String(selectedSeedId)) || null
+        : null;
+    const selectedLots = selectedSeed ? lotsBySeed.get(String(selectedSeed.seedId)) || [] : [];
+
+    function setFilter(field, value) {
+        setFilters((prev) => ({...prev, [field]: value}));
+        setPage(1);
+    }
+
     function handleFilterChange(field) {
-        return (e) => {
-            setFilters((prev) => ({ ...prev, [field]: e.target.value }));
-            setPage(1);
-        };
+        return (e) => setFilter(field, e.target.value);
     }
 
     function handleSearchChange(e) {
@@ -80,6 +133,10 @@ function SeedListPage() {
         setFilters(SEED_FILTERS_INITIAL_STATE);
         setSearchText('');
         setPage(1);
+    }
+
+    function handleSeeLots(seedId) {
+        navigate('/lots', {state: {seedId: String(seedId)}});
     }
 
     const hasActiveFilters =
@@ -97,7 +154,7 @@ function SeedListPage() {
         return (
             <div className="seed-list-empty">
                 <p>No existen semillas registradas en el catálogo.</p>
-                <Link to="/seeds/new" className="seed-button primary">
+                <Link to="/seeds/new" className="seed-btn">
                     Registrar nueva semilla
                 </Link>
             </div>
@@ -106,17 +163,42 @@ function SeedListPage() {
 
     return (
         <div className="seed-list-page">
+            <div className="seed-head">
+                <div>
+                    <h1>Semillas</h1>
+                </div>
+                <Link to="/seeds/new" className="seed-btn">
+                    + Registrar semilla
+                </Link>
+            </div>
+
             <div className="seed-list-toolbar">
                 <input
-                    type="text"
+                    type="search"
                     className="seed-search-input"
-                    placeholder="Buscar por nombre, descripción o proveedor..."
+                    placeholder="Buscar por nombre, descripción o proveedor"
+                    aria-label="Buscar semillas"
                     value={searchText}
                     onChange={handleSearchChange}
                 />
 
                 <select
-                    className="seed-sort-select"
+                    className="seed-select"
+                    aria-label="Tipo"
+                    value={filters.type}
+                    onChange={handleFilterChange('type')}
+                >
+                    <option value="">Todos los tipos</option>
+                    {SEED_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+
+                <select
+                    className="seed-select"
+                    aria-label="Ordenar"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                 >
@@ -126,134 +208,96 @@ function SeedListPage() {
                         </option>
                     ))}
                 </select>
-
-                <button
-                    type="button"
-                    className="seed-button secondary"
-                    onClick={() => setShowFilters((prev) => !prev)}
-                >
-                    Filtros {showFilters ? '▲' : '▼'}
-                </button>
-
-                <Link to="/seeds/new" className="seed-button primary">
-                    + Registrar semilla
-                </Link>
             </div>
 
-            {showFilters && (
-                <div className="seed-filters-panel">
-                    <label className="seed-field">
-                        <span>Proveedor</span>
-                        <select value={filters.supplierId} onChange={handleFilterChange('supplierId')}>
-                            <option value="">Todos</option>
-                            {suppliers.map((supplier) => (
-                                <option key={supplier.supplierId} value={supplier.supplierId}>
-                                    {supplier.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Tipo</span>
-                        <select value={filters.type} onChange={handleFilterChange('type')}>
-                            <option value="">Todos</option>
-                            {SEED_TYPE_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Estado</span>
-                        <select value={filters.active} onChange={handleFilterChange('active')}>
-                            <option value="">Todos</option>
-                            <option value="true">Activa</option>
-                            <option value="false">Inactiva</option>
-                        </select>
-                    </label>
-
-                    <button type="button" className="seed-button secondary" onClick={handleClearFilters}>
-                        Limpiar filtros
-                    </button>
-                </div>
-            )}
+            <div className="seed-chips" role="group" aria-label="Estado">
+                <button
+                    type="button"
+                    className={`seed-chip ${filters.active === '' ? 'on' : ''}`}
+                    onClick={() => setFilter('active', '')}
+                >
+                    Todas
+                </button>
+                <button
+                    type="button"
+                    className={`seed-chip ${filters.active === 'true' ? 'on' : ''}`}
+                    onClick={() => setFilter('active', 'true')}
+                >
+                    Activas
+                </button>
+                <button
+                    type="button"
+                    className={`seed-chip red ${filters.active === 'false' ? 'on' : ''}`}
+                    onClick={() => setFilter('active', 'false')}
+                >
+                    Desactivadas
+                </button>
+            </div>
 
             {processedSeeds.length === 0 ? (
                 <div className="seed-list-message">
-                    No se encontraron semillas con los criterios especificados.
+                    No hay semillas con esos criterios.
                     {hasActiveFilters && (
-                        <button type="button" className="seed-link-button" onClick={handleClearFilters}>
-                            Limpiar búsqueda y filtros
+                        <button type="button" className="seed-link" onClick={handleClearFilters}>
+                            Limpiar filtros
                         </button>
                     )}
                 </div>
             ) : (
                 <>
-                    <div className="seed-table-wrapper">
-                        <table className="seed-table">
-                            <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
-                                <th>Descripción</th>
-                                <th>Proveedores</th>
-                                <th>Estado</th>
-                                <th>Creada</th>
-                                <th>Acciones</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {pageItems.map((seed) => (
-                                <tr key={seed.seedId}>
-                                    <td>{seed.name}</td>
-                                    <td>{SEED_TYPE_LABELS[seed.type] || seed.type}</td>
-                                    <td>{seed.description || '—'}</td>
-                                    <td>{seed.supplierNames.join(', ') || '—'}</td>
-                                    <td>
-                                        <span className={`stock-badge ${seed.active ? 'available' : 'out'}`}>
-                                            {seed.active ? 'Activa' : 'Inactiva'}
-                                        </span>
-                                    </td>
-                                    <td>{formatDate(seed.createdDate)}</td>
-                                    <td>
-                                        <Link to={`/seeds/${seed.seedId}/edit`} className="seed-action-link">
-                                            Editar
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <section className="seed-grid" aria-live="polite">
+                        {pageItems.map((seed) => {
+                            const seedLots = lotsBySeed.get(String(seed.seedId)) || [];
+                            return (
+                                <SeedCard
+                                    key={seed.seedId}
+                                    seed={seed}
+                                    typeLabel={SEED_TYPE_LABELS[seed.type] || seed.type}
+                                    stock={sumStock(seedLots)}
+                                    lotCount={seedLots.length}
+                                    lotsLoaded={lotsLoaded}
+                                    onSelect={setSelectedSeedId}
+                                />
+                            );
+                        })}
+                    </section>
 
-                    <div className="seed-pagination">
+                    <nav className="seed-pagination" aria-label="Paginación">
                         <button
                             type="button"
-                            className="seed-button secondary"
+                            className="seed-btn ghost"
                             disabled={currentPage === 1}
                             onClick={() => setPage((prev) => prev - 1)}
                         >
                             Anterior
                         </button>
                         <span>
-                            Página {currentPage} de {totalPages}
+                            Mostrando {processedSeeds.length} de {seeds.length} · Página {currentPage} de{' '}
+                            {totalPages}
                         </span>
                         <button
                             type="button"
-                            className="seed-button secondary"
+                            className="seed-btn ghost"
                             disabled={currentPage === totalPages}
                             onClick={() => setPage((prev) => prev + 1)}
                         >
                             Siguiente
                         </button>
-                    </div>
+                    </nav>
                 </>
             )}
+
+            <SeedDetailModal
+                seed={selectedSeed}
+                typeLabel={selectedSeed ? SEED_TYPE_LABELS[selectedSeed.type] || selectedSeed.type : ''}
+                lots={selectedLots}
+                stock={sumStock(selectedLots)}
+                lotsLoaded={lotsLoaded}
+                onSeeLots={handleSeeLots}
+                onClose={() => setSelectedSeedId(null)}
+            />
         </div>
     );
-}
+};
 
 export default SeedListPage;
