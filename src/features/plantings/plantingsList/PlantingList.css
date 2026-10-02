@@ -1,0 +1,657 @@
+.planting-list-page {
+    --planting-surface: #ffffff;
+    --planting-line: #e5e7eb;
+    --planting-soft: #f3f4f6;
+    --planting-text: #1f2937;
+    --planting-muted: #6b7280;
+    --planting-green: #2e7d32;
+    --planting-green-bg: #e8f5e9;
+    --planting-green-ring: #a7d7ac;
+    --planting-red: #b3261e;
+    --planting-red-bg: #fdecea;
+    --planting-red-line: #f5c6c2;
+    --planting-amb: #9a5b00;
+    --planting-amb-bg: #fff3dc;
+    --planting-teal: #00796b;
+    --planting-teal-bg: #e0f2f1;
+
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    max-width: 1500px;
+    color: var(--planting-text);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.planting-list-page *,
+.planting-list-page *::before,
+.planting-list-page *::after {
+    box-sizing: border-box;
+}
+
+.planting-list-loading,
+.planting-list-empty {
+    padding: 32px;
+    color: #6b7280;
+}
+
+.planting-list-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.planting-list-empty .seed-button,
+.planting-list-page .seed-button {
+    display: inline-block;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+.planting-list-message {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 32px;
+    color: #6b7280;
+}
+
+.planting-list-message.error {
+    color: #b3261e;
+    background: #fdecea;
+    border-color: #f5c6c2;
+}
+
+/* Colores por estado: se heredan de la columna / el diálogo */
+.planting-status-sown {
+    --planting-c: var(--planting-amb, #9a5b00);
+    --planting-cb: var(--planting-amb-bg, #fff3dc);
+}
+
+.planting-status-germinating {
+    --planting-c: var(--planting-teal, #00796b);
+    --planting-cb: var(--planting-teal-bg, #e0f2f1);
+}
+
+.planting-status-germinated {
+    --planting-c: var(--planting-green, #2e7d32);
+    --planting-cb: var(--planting-green-bg, #e8f5e9);
+}
+
+.planting-status-finished {
+    --planting-c: var(--planting-muted, #6b7280);
+    --planting-cb: var(--planting-surface, #ffffff);
+}
+
+/* Encabezado */
+.planting-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.planting-head h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.planting-head p {
+    margin: 2px 0 0;
+    color: var(--planting-muted);
+}
+
+.planting-search {
+    width: 100%;
+    max-width: 420px;
+    padding: 10px 12px;
+    border: 1px solid var(--planting-line);
+    border-radius: 8px;
+    background: var(--planting-surface);
+    font-family: inherit;
+    font-size: 14px;
+    color: inherit;
+}
+
+.planting-search:focus,
+.planting-bed:focus-visible,
+.planting-card:focus-visible,
+.planting-x:focus-visible,
+.planting-gh:focus-visible,
+.planting-btn:focus-visible {
+    outline: 2px solid var(--planting-green-ring);
+    outline-offset: 1px;
+}
+
+/* Camas */
+.planting-section h3 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: var(--planting-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.planting-section h3 button {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--planting-green);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.planting-beds {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.planting-bed {
+    flex: 0 0 150px;
+    background: var(--planting-surface);
+    border: 1px solid var(--planting-line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: inherit;
+    color: inherit;
+}
+
+.planting-bed:hover {
+    border-color: var(--planting-green-ring);
+}
+
+.planting-bed.on {
+    border-color: var(--planting-green);
+    box-shadow: 0 0 0 2px var(--planting-green-ring);
+}
+
+.planting-bed.off {
+    opacity: 0.55;
+}
+
+.planting-bed b {
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.planting-bed small {
+    color: var(--planting-muted);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.planting-fill {
+    height: 8px;
+    border-radius: 9px;
+    background: var(--planting-soft);
+    overflow: hidden;
+}
+
+.planting-fill i {
+    display: block;
+    height: 100%;
+    border-radius: 9px;
+    background: var(--planting-green);
+}
+
+.planting-fill.hi i {
+    background: var(--planting-amb);
+}
+
+.planting-fill.full i {
+    background: var(--planting-red);
+}
+
+/* Tablero */
+.planting-board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(250px, 1fr));
+    gap: 14px;
+    align-items: start;
+    overflow-x: auto;
+}
+
+.planting-col {
+    background: var(--planting-soft);
+    border-radius: 14px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 120px;
+}
+
+.planting-ch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    font-weight: 700;
+}
+
+.planting-ch i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--planting-c);
+}
+
+.planting-ch span {
+    margin-left: auto;
+    background: var(--planting-surface);
+    border-radius: 99px;
+    padding: 0 9px;
+    font-size: 12px;
+    color: var(--planting-muted);
+}
+
+.planting-none {
+    color: var(--planting-muted);
+    text-align: center;
+    padding: 18px 8px;
+    font-size: 13px;
+}
+
+/* Tarjeta */
+.planting-card {
+    background: var(--planting-surface);
+    border: 1px solid var(--planting-line);
+    border-left: 4px solid var(--planting-c);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+}
+
+.planting-card:hover {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.planting-card.off {
+    border-color: var(--planting-red-line);
+    border-left-color: var(--planting-red);
+    background: var(--planting-red-bg);
+}
+
+.planting-r1 {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.planting-r1 h4 {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.25;
+}
+
+.planting-r1 small {
+    color: var(--planting-muted);
+}
+
+.planting-tag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 99px;
+    background: var(--planting-cb);
+    color: var(--planting-c);
+    white-space: nowrap;
+    border: 1px solid var(--planting-line);
+}
+
+.planting-r2 {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.planting-ring {
+    --p: 0;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    flex: none;
+    background: conic-gradient(var(--planting-c) calc(var(--p) * 1%), var(--planting-soft) 0);
+    display: grid;
+    place-items: center;
+    position: relative;
+}
+
+.planting-ring::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: var(--planting-surface);
+}
+
+.planting-card.off .planting-ring::before {
+    background: var(--planting-red-bg);
+}
+
+.planting-ring b {
+    position: relative;
+    font-size: 13px;
+}
+
+.planting-ring.large {
+    width: 96px;
+    height: 96px;
+}
+
+.planting-ring.large::before {
+    inset: 10px;
+}
+
+.planting-ring.large b {
+    font-size: 20px;
+}
+
+.planting-nums {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 14px;
+    flex: 1;
+}
+
+.planting-nums span {
+    display: block;
+    font-size: 11px;
+    color: var(--planting-muted);
+}
+
+.planting-nums b {
+    font-size: 15px;
+}
+
+.planting-r3 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--planting-muted);
+}
+
+.planting-when {
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 99px;
+    background: var(--planting-soft);
+    color: var(--planting-text);
+    white-space: nowrap;
+}
+
+.planting-when.warn {
+    background: var(--planting-amb-bg);
+    color: var(--planting-amb);
+}
+
+.planting-when.late {
+    background: var(--planting-red-bg);
+    color: var(--planting-red);
+}
+
+.planting-note {
+    margin: 0;
+    font-size: 12px;
+    color: var(--planting-muted);
+    font-style: italic;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Diálogo de detalle */
+.planting-dialog {
+    border: 1px solid var(--planting-line);
+    border-radius: 16px;
+    padding: 0;
+    width: min(600px, calc(100vw - 32px));
+    max-height: min(88vh, 700px);
+    background: var(--planting-surface);
+    color: var(--planting-text);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.planting-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.planting-dialog::backdrop {
+    background: rgba(15, 23, 18, 0.5);
+}
+
+.planting-dialog-head {
+    padding: 22px 24px 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--planting-line);
+}
+
+.planting-dialog-head h2 {
+    margin: 0 0 8px;
+    font-size: 22px;
+}
+
+.planting-tags {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.planting-off-label {
+    color: var(--planting-red);
+    font-weight: 600;
+}
+
+.planting-x {
+    background: none;
+    border: 0;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--planting-muted);
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+
+.planting-x:hover {
+    background: var(--planting-soft);
+}
+
+.planting-dialog-body {
+    padding: 20px 24px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.planting-hero {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.planting-dk {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    flex: 1;
+}
+
+.planting-dk span {
+    display: block;
+    font-size: 12px;
+    color: var(--planting-muted);
+}
+
+.planting-dk b {
+    font-size: 15px;
+}
+
+.planting-trail {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.planting-trail li {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    color: var(--planting-muted);
+}
+
+.planting-trail li::before {
+    content: '';
+    display: block;
+    height: 6px;
+    background: var(--planting-soft);
+    margin-bottom: 6px;
+}
+
+.planting-trail li:first-child::before {
+    border-radius: 9px 0 0 9px;
+}
+
+.planting-trail li:last-child::before {
+    border-radius: 0 9px 9px 0;
+}
+
+.planting-trail li.done {
+    color: var(--planting-text);
+    font-weight: 600;
+}
+
+.planting-trail li.done::before {
+    background: var(--planting-c);
+}
+
+.planting-hint {
+    font-size: 12px;
+    color: var(--planting-muted);
+}
+
+.planting-dialog-note {
+    margin: 2px 0 0;
+}
+
+.planting-inline-error {
+    background: var(--planting-red-bg);
+    border: 1px solid var(--planting-red-line);
+    color: var(--planting-red);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.planting-dialog-foot {
+    padding: 14px 24px;
+    border-top: 1px solid var(--planting-line);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.planting-dacts {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.planting-gh {
+    background: none;
+    color: inherit;
+    border: 1px solid var(--planting-line);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.planting-gh:hover:not(:disabled) {
+    border-color: var(--planting-green-ring);
+}
+
+.planting-gh.danger {
+    color: var(--planting-red);
+}
+
+.planting-gh.danger:hover:not(:disabled) {
+    border-color: var(--planting-red-line);
+    background: var(--planting-red-bg);
+}
+
+.planting-btn {
+    background: var(--planting-green);
+    color: #ffffff;
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.planting-btn:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.planting-btn:disabled,
+.planting-gh:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+@media (max-width: 820px) {
+    .planting-hero {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .planting-card {
+        transition: none;
+    }
+}
