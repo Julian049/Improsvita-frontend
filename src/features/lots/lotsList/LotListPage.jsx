@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { getAllLots } from '../lotApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
 import { getLotStatusLabel } from '../lotValidation.js';
 import { formatDate } from '../../../utils/dateUtils.js';
+import { getExpirationStatus } from '../../../utils/expirationStatus.js';
+import { formatQty } from '../../../utils/numberUtils.js';
 import {
     LOT_FILTERS_INITIAL_STATE,
     SORT_OPTIONS,
@@ -16,42 +18,32 @@ import {
 } from './lotListUtils.js';
 import './LotList.css';
 
-const EXPIRING_DAYS = 30;
-const MS_PER_DAY = 864e5;
-
-function daysUntil(dateValue) {
-    if (!dateValue) return null;
-    const due = new Date(`${String(dateValue).slice(0, 10)}T12:00:00`);
-    if (Number.isNaN(due.getTime())) return null;
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    return Math.round((due - today) / MS_PER_DAY);
-}
-
 function getLotVariant(lot) {
-    const days = daysUntil(lot.dueDate);
-    if (getStockStatus(lot) !== 'available') return { variant: 'out', days };
-    if (days !== null && days < 0) return { variant: 'expired', days };
-    if (days !== null && days <= EXPIRING_DAYS) return { variant: 'expiring', days };
-    return { variant: 'available', days };
+    const expiration = getExpirationStatus(lot.dueDate);
+    if (getStockStatus(lot) !== 'available') return { variant: 'out', expiration };
+    if (expiration.level === 'expired') return { variant: 'expired', expiration };
+    if (expiration.level === 'critical' || expiration.level === 'warning') {
+        return { variant: 'expiring', expiration };
+    }
+    return { variant: 'available', expiration };
 }
 
-function DueDate({ lot, variant, days }) {
+function DueDate({ lot, variant, expiration }) {
     if (variant === 'expired') {
-        return <span className="lot-due-bad">{formatDate(lot.dueDate)} · vencido</span>;
+        return (
+            <span className="lot-due-bad">
+                {formatDate(lot.dueDate)} · {expiration.label}
+            </span>
+        );
     }
     if (variant === 'expiring') {
         return (
             <span className="lot-due-warn">
-                {formatDate(lot.dueDate)} · en {days} {days === 1 ? 'día' : 'días'}
+                {formatDate(lot.dueDate)} · {expiration.label}
             </span>
         );
     }
     return <span>{formatDate(lot.dueDate)}</span>;
-}
-
-function formatQty(value) {
-    return (Number(value) || 0).toLocaleString('es-CO');
 }
 
 function getLotMovements(lot) {
@@ -76,7 +68,7 @@ function getLotMovements(lot) {
 }
 
 function LotDetail({ lot, onBack, onSeeSeedLots }) {
-    const { variant, days } = getLotVariant(lot);
+    const { variant, expiration } = getLotVariant(lot);
     const initial = Number(lot.initialQuantity) || 0;
     const available = Number(lot.availableQuantity) || 0;
     const used = Math.max(initial - available, 0);
@@ -101,11 +93,11 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
                 </div>
                 <div className="lot-head-actions">
                     {lot.seedId && (
-                        <button type="button" className="lot-btn ghost" onClick={() => onSeeSeedLots(lot.seedId)}>
+                        <button type="button" className="seed-button secondary" onClick={() => onSeeSeedLots(lot.seedId)}>
                             Ver lotes de esta semilla
                         </button>
                     )}
-                    <Link to={`/lots/${lot.lotId}/edit`} className="lot-btn">
+                    <Link to={`/lots/${lot.lotId}/edit`} className="seed-button primary">
                         Editar lote
                     </Link>
                 </div>
@@ -137,7 +129,7 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
                             <div>
                                 <span>Fecha de vencimiento</span>
                                 <b>
-                                    <DueDate lot={lot} variant={variant} days={days} />
+                                    <DueDate lot={lot} variant={variant} expiration={expiration} />
                                 </b>
                             </div>
                         </div>
@@ -192,6 +184,7 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
 }
 
 function LotListPage() {
+    const location = useLocation();
     const [lots, setLots] = useState([]);
     const [seeds, setSeeds] = useState([]);
     const [locations, setLocations] = useState([]);
@@ -199,7 +192,10 @@ function LotListPage() {
     const [loadError, setLoadError] = useState(null);
 
     const [searchText, setSearchText] = useState('');
-    const [filters, setFilters] = useState(LOT_FILTERS_INITIAL_STATE);
+    const [filters, setFilters] = useState(() => ({
+        ...LOT_FILTERS_INITIAL_STATE,
+        seedId: location.state?.seedId ? String(location.state.seedId) : '',
+    }));
     const [sortBy, setSortBy] = useState('entry_desc');
     const [page, setPage] = useState(1);
     const [selectedLotId, setSelectedLotId] = useState(null);
@@ -304,7 +300,7 @@ function LotListPage() {
         return (
             <div className="lot-list-empty">
                 <p>No existen lotes registrados en el inventario.</p>
-                <Link to="/lots/new" className="lot-btn">
+                <Link to="/lots/new" className="seed-button primary">
                     Registrar nuevo lote
                 </Link>
             </div>
@@ -331,7 +327,7 @@ function LotListPage() {
         <div className="lot-list-page" ref={topRef}>
             <div className="lot-head">
                 <h1>Lotes</h1>
-                <Link to="/lots/new" className="lot-btn">
+                <Link to="/lots/new" className="seed-button primary">
                     + Registrar lote
                 </Link>
             </div>
@@ -389,7 +385,6 @@ function LotListPage() {
 
             </div>
 
-
             <div className="lot-chips">
                 {selectedSeedName && (
                     <div className="lot-active-filter">
@@ -429,7 +424,7 @@ function LotListPage() {
                 <div className="lot-list-message">
                     No hay lotes con esos criterios.
                     {hasActiveFilters && (
-                        <button type="button" className="lot-link-button" onClick={handleClearFilters}>
+                        <button type="button" className="lot-link" onClick={handleClearFilters}>
                             Limpiar búsqueda y filtros
                         </button>
                     )}
@@ -451,7 +446,7 @@ function LotListPage() {
                             </thead>
                             <tbody>
                             {pageItems.map((lot) => {
-                                const { variant, days } = getLotVariant(lot);
+                                const { variant, expiration } = getLotVariant(lot);
                                 const initial = Number(lot.initialQuantity) || 0;
                                 const available = Number(lot.availableQuantity) || 0;
                                 const ratio = initial > 0 ? Math.min(available / initial, 1) : 0;
@@ -484,11 +479,11 @@ function LotListPage() {
                                         <td>{lot.locationName || '—'}</td>
                                         <td>{formatDate(lot.entryDate)}</td>
                                         <td>
-                                            <DueDate lot={lot} variant={variant} days={days} />
+                                            <DueDate lot={lot} variant={variant} expiration={expiration} />
                                         </td>
                                         <td className="lot-qty">
-                                            <b>{available.toLocaleString('es-CO')}</b>{' '}
-                                            <small>de {initial.toLocaleString('es-CO')}</small>
+                                            <b>{formatQty(available)}</b>{' '}
+                                            <small>de {formatQty(initial)}</small>
                                             <div className="lot-meter">
                                                 <i style={{ width: `${ratio * 100}%` }} />
                                             </div>
@@ -508,7 +503,7 @@ function LotListPage() {
                     <nav className="lot-pagination" aria-label="Paginación">
                         <button
                             type="button"
-                            className="lot-btn ghost"
+                            className="seed-button secondary"
                             disabled={currentPage === 1}
                             onClick={() => setPage((prev) => prev - 1)}
                         >
@@ -519,7 +514,7 @@ function LotListPage() {
                         </span>
                         <button
                             type="button"
-                            className="lot-btn ghost"
+                            className="seed-button secondary"
                             disabled={currentPage === totalPages}
                             onClick={() => setPage((prev) => prev + 1)}
                         >

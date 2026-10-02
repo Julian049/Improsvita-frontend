@@ -12,7 +12,6 @@
     --lot-red-line: #f5c6c2;
     --lot-amb: #9a5b00;
     --lot-amb-bg: #fff3dc;
-    --lot-btn-text: #ffffff;
 
     display: flex;
     flex-direction: column;
@@ -64,44 +63,10 @@
     text-align: left;
 }
 
-.lot-btn {
+.lot-list-page .seed-button,
+.lot-list-empty .seed-button {
     display: inline-block;
-    background: var(--lot-green, #2e7d32);
-    color: var(--lot-btn-text, #ffffff);
-    border: 0;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
     text-decoration: none;
-    cursor: pointer;
-}
-
-.lot-btn:hover {
-    filter: brightness(1.08);
-}
-
-.lot-btn.ghost {
-    background: none;
-    color: var(--lot-text, #1f2937);
-    border: 1px solid var(--lot-line, #e5e7eb);
-}
-
-.lot-btn:disabled {
-    opacity: 0.45;
-    cursor: default;
-    filter: none;
-}
-
-.lot-link-button {
-    background: none;
-    border: none;
-    color: #2e7d32;
-    text-decoration: underline;
-    cursor: pointer;
-    padding: 0;
-    font-size: 13px;
     font-family: inherit;
 }
 
@@ -151,7 +116,6 @@
 .lot-search-input:focus,
 .lot-sort-select:focus,
 .lot-select:focus,
-.lot-btn:focus-visible,
 .lot-chip:focus-visible,
 .lot-link:focus-visible,
 .lot-table tbody tr:focus-visible {
@@ -361,12 +325,6 @@
     align-items: center;
     gap: 16px;
     color: var(--lot-muted);
-}
-
-.lot-pagination .lot-btn.ghost {
-    background: var(--lot-surface);
-    padding: 6px 12px;
-    font-weight: 400;
 }
 
 .lot-crumb {
