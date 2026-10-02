@@ -519,6 +519,15 @@
     display: block;
 }
 
+.seed-hl small {
+    color: var(--seed-muted);
+    font-size: 12px;
+}
+
+.seed-hl .seed-hl-qty {
+    flex: none;
+}
+
 .seed-dialog-foot {
     padding: 14px 24px;
     border-top: 1px solid var(--seed-line);
