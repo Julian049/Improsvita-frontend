@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { getAllSeeds } from '../seedApi.js';
 import { getSuppliers } from '../../suppliers/supplierApi.js';
+import { getAllLots } from '../../lots/lotApi.js';
 import { SEED_TYPE_OPTIONS } from '../seedValidation.js';
 import { formatDate } from '../../../utils/dateUtils.js';
 import {
@@ -18,9 +19,30 @@ const SEED_TYPE_LABELS = Object.fromEntries(
     SEED_TYPE_OPTIONS.map((option) => [option.value, option.label])
 );
 
+const EXPIRING_DAYS = 30;
+const MS_PER_DAY = 864e5;
+
+function daysUntil(dateValue) {
+    if (!dateValue) return null;
+    const due = new Date(`${String(dateValue).slice(0, 10)}T12:00:00`);
+    if (Number.isNaN(due.getTime())) return null;
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    return Math.round((due - today) / MS_PER_DAY);
+}
+
+function formatQty(value) {
+    return (Number(value) || 0).toLocaleString('es-CO');
+}
+
 function SeedListPage() {
+    const navigate = useNavigate();
+    const dialogRef = useRef(null);
+
     const [seeds, setSeeds] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [lots, setLots] = useState([]);
+    const [lotsLoaded, setLotsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
 
@@ -28,13 +50,22 @@ function SeedListPage() {
     const [filters, setFilters] = useState(SEED_FILTERS_INITIAL_STATE);
     const [sortBy, setSortBy] = useState('name_asc');
     const [page, setPage] = useState(1);
-    const [showFilters, setShowFilters] = useState(false);
+    const [selectedSeedId, setSelectedSeedId] = useState(null);
 
     useEffect(() => {
-        Promise.all([getAllSeeds(), getSuppliers()])
-            .then(([seedsData, suppliersData]) => {
+        Promise.all([
+            getAllSeeds(),
+            getSuppliers(),
+            getAllLots().then(
+                (data) => ({ data, ok: true }),
+                () => ({ data: [], ok: false })
+            ),
+        ])
+            .then(([seedsData, suppliersData, lotsResult]) => {
                 setSeeds(seedsData);
                 setSuppliers(suppliersData);
+                setLots(lotsResult.data);
+                setLotsLoaded(lotsResult.ok);
             })
             .catch(() => {
                 setLoadError('No se pudo cargar el catálogo de semillas.');
@@ -53,6 +84,37 @@ function SeedListPage() {
         }));
     }, [seeds, suppliers]);
 
+    const lotStatsBySeed = useMemo(() => {
+        const map = new Map();
+        lots.forEach((lot) => {
+            const key = String(lot.seedId);
+            const current = map.get(key) || { stock: 0, count: 0 };
+            current.stock += Number(lot.availableQuantity) || 0;
+            current.count += 1;
+            map.set(key, current);
+        });
+        return map;
+    }, [lots]);
+
+    const expiringLotsCount = useMemo(
+        () =>
+            lots.filter((lot) => {
+                const days = daysUntil(lot.dueDate);
+                return (
+                    (Number(lot.availableQuantity) || 0) > 0 &&
+                    days !== null &&
+                    days >= 0 &&
+                    days <= EXPIRING_DAYS
+                );
+            }).length,
+        [lots]
+    );
+
+    const summary = useMemo(() => {
+        const active = seeds.filter((seed) => seed.active).length;
+        return { total: seeds.length, active, inactive: seeds.length - active };
+    }, [seeds]);
+
     const processedSeeds = useMemo(() => {
         const searched = searchSeeds(seedsWithSupplierNames, searchText);
         const filtered = filterSeeds(searched, filters);
@@ -64,11 +126,24 @@ function SeedListPage() {
         [processedSeeds, page]
     );
 
+    const selectedSeed = selectedSeedId
+        ? seedsWithSupplierNames.find((seed) => String(seed.seedId) === String(selectedSeedId))
+        : null;
+
+    useEffect(() => {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        if (selectedSeed && !dialog.open) dialog.showModal();
+        if (!selectedSeed && dialog.open) dialog.close();
+    }, [selectedSeed]);
+
+    function setFilter(field, value) {
+        setFilters((prev) => ({ ...prev, [field]: value }));
+        setPage(1);
+    }
+
     function handleFilterChange(field) {
-        return (e) => {
-            setFilters((prev) => ({ ...prev, [field]: e.target.value }));
-            setPage(1);
-        };
+        return (e) => setFilter(field, e.target.value);
     }
 
     function handleSearchChange(e) {
@@ -80,6 +155,21 @@ function SeedListPage() {
         setFilters(SEED_FILTERS_INITIAL_STATE);
         setSearchText('');
         setPage(1);
+    }
+
+    function handleCardClick(e, seedId) {
+        if (e.target.closest('a, button')) return;
+        setSelectedSeedId(seedId);
+    }
+
+    function handleCardKeyDown(e, seedId) {
+        if (e.key === 'Enter' && e.target.tagName === 'ARTICLE') {
+            setSelectedSeedId(seedId);
+        }
+    }
+
+    function handleSeeLots(seedId) {
+        navigate('/lots', { state: { seedId: String(seedId) } });
     }
 
     const hasActiveFilters =
@@ -97,26 +187,55 @@ function SeedListPage() {
         return (
             <div className="seed-list-empty">
                 <p>No existen semillas registradas en el catálogo.</p>
-                <Link to="/seeds/new" className="seed-button primary">
+                <Link to="/seeds/new" className="seed-btn">
                     Registrar nueva semilla
                 </Link>
             </div>
         );
     }
 
+    const selectedStats = selectedSeed
+        ? lotStatsBySeed.get(String(selectedSeed.seedId)) || { stock: 0, count: 0 }
+        : null;
+
     return (
         <div className="seed-list-page">
+            <div className="seed-head">
+                <div>
+                    <h1>Semillas</h1>
+                </div>
+                <Link to="/seeds/new" className="seed-btn">
+                    + Registrar semilla
+                </Link>
+            </div>
+
             <div className="seed-list-toolbar">
                 <input
-                    type="text"
+                    type="search"
                     className="seed-search-input"
-                    placeholder="Buscar por nombre, descripción o proveedor..."
+                    placeholder="Buscar por nombre, descripción o proveedor"
+                    aria-label="Buscar semillas"
                     value={searchText}
                     onChange={handleSearchChange}
                 />
 
                 <select
-                    className="seed-sort-select"
+                    className="seed-select"
+                    aria-label="Tipo"
+                    value={filters.type}
+                    onChange={handleFilterChange('type')}
+                >
+                    <option value="">Todos los tipos</option>
+                    {SEED_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+
+                <select
+                    className="seed-select"
+                    aria-label="Ordenar"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                 >
@@ -126,132 +245,229 @@ function SeedListPage() {
                         </option>
                     ))}
                 </select>
-
-                <button
-                    type="button"
-                    className="seed-button secondary"
-                    onClick={() => setShowFilters((prev) => !prev)}
-                >
-                    Filtros {showFilters ? '▲' : '▼'}
-                </button>
-
-                <Link to="/seeds/new" className="seed-button primary">
-                    + Registrar semilla
-                </Link>
             </div>
 
-            {showFilters && (
-                <div className="seed-filters-panel">
-                    <label className="seed-field">
-                        <span>Proveedor</span>
-                        <select value={filters.supplierId} onChange={handleFilterChange('supplierId')}>
-                            <option value="">Todos</option>
-                            {suppliers.map((supplier) => (
-                                <option key={supplier.supplierId} value={supplier.supplierId}>
-                                    {supplier.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Tipo</span>
-                        <select value={filters.type} onChange={handleFilterChange('type')}>
-                            <option value="">Todos</option>
-                            {SEED_TYPE_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Estado</span>
-                        <select value={filters.active} onChange={handleFilterChange('active')}>
-                            <option value="">Todos</option>
-                            <option value="true">Activa</option>
-                            <option value="false">Inactiva</option>
-                        </select>
-                    </label>
-
-                    <button type="button" className="seed-button secondary" onClick={handleClearFilters}>
-                        Limpiar filtros
-                    </button>
-                </div>
-            )}
+            <div className="seed-chips" role="group" aria-label="Estado">
+                <button
+                    type="button"
+                    className={`seed-chip ${filters.active === '' ? 'on' : ''}`}
+                    onClick={() => setFilter('active', '')}
+                >
+                    Todas
+                </button>
+                <button
+                    type="button"
+                    className={`seed-chip ${filters.active === 'true' ? 'on' : ''}`}
+                    onClick={() => setFilter('active', 'true')}
+                >
+                    Activas
+                </button>
+                <button
+                    type="button"
+                    className={`seed-chip red ${filters.active === 'false' ? 'on' : ''}`}
+                    onClick={() => setFilter('active', 'false')}
+                >
+                    Desactivadas
+                </button>
+            </div>
 
             {processedSeeds.length === 0 ? (
                 <div className="seed-list-message">
-                    No se encontraron semillas con los criterios especificados.
+                    No hay semillas con esos criterios.
                     {hasActiveFilters && (
-                        <button type="button" className="seed-link-button" onClick={handleClearFilters}>
-                            Limpiar búsqueda y filtros
+                        <button type="button" className="seed-link" onClick={handleClearFilters}>
+                            Limpiar filtros
                         </button>
                     )}
                 </div>
             ) : (
                 <>
-                    <div className="seed-table-wrapper">
-                        <table className="seed-table">
-                            <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
-                                <th>Descripción</th>
-                                <th>Proveedores</th>
-                                <th>Estado</th>
-                                <th>Creada</th>
-                                <th>Acciones</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {pageItems.map((seed) => (
-                                <tr key={seed.seedId}>
-                                    <td>{seed.name}</td>
-                                    <td>{SEED_TYPE_LABELS[seed.type] || seed.type}</td>
-                                    <td>{seed.description || '—'}</td>
-                                    <td>{seed.supplierNames.join(', ') || '—'}</td>
-                                    <td>
-                                        <span className={`stock-badge ${seed.active ? 'available' : 'out'}`}>
-                                            {seed.active ? 'Activa' : 'Inactiva'}
+                    <section className="seed-grid" aria-live="polite">
+                        {pageItems.map((seed) => {
+                            const stats = lotStatsBySeed.get(String(seed.seedId)) || { stock: 0, count: 0 };
+                            return (
+                                <article
+                                    key={seed.seedId}
+                                    tabIndex={0}
+                                    className={`seed-card ${seed.active ? '' : 'off'}`}
+                                    onClick={(e) => handleCardClick(e, seed.seedId)}
+                                    onKeyDown={(e) => handleCardKeyDown(e, seed.seedId)}
+                                >
+                                    <div className="seed-card-row">
+                                        <h3>{seed.name}</h3>
+                                        <span className="seed-type">
+                                            {SEED_TYPE_LABELS[seed.type] || seed.type}
                                         </span>
-                                    </td>
-                                    <td>{formatDate(seed.createdDate)}</td>
-                                    <td>
-                                        <Link to={`/seeds/${seed.seedId}/edit`} className="seed-action-link">
-                                            Editar
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                    </div>
+                                    <span className="seed-state">{seed.active ? 'Activa' : 'Desactivada'}</span>
+                                    <p className="seed-desc">{seed.description || '—'}</p>
+                                    <div className="seed-meta">
+                                        <div>
+                                            <span>Stock disponible</span>
+                                            {lotsLoaded ? (
+                                                <b className={stats.stock ? '' : 'seed-out'}>
+                                                    {stats.stock ? `${formatQty(stats.stock)} uds` : 'Agotado'}
+                                                </b>
+                                            ) : (
+                                                <b>—</b>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <span>Lotes · Proveedores</span>
+                                            <b>
+                                                {lotsLoaded ? stats.count : '—'} · {seed.supplierNames.length}
+                                            </b>
+                                        </div>
+                                    </div>
+                                    <div className="seed-foot">
+                                        <span>Creada {formatDate(seed.createdDate)}</span>
+                                        <div className="seed-acts">
+                                            <Link to={`/seeds/${seed.seedId}/edit`} className="seed-link">
+                                                Editar
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </section>
 
-                    <div className="seed-pagination">
+                    <nav className="seed-pagination" aria-label="Paginación">
                         <button
                             type="button"
-                            className="seed-button secondary"
+                            className="seed-btn ghost"
                             disabled={currentPage === 1}
                             onClick={() => setPage((prev) => prev - 1)}
                         >
                             Anterior
                         </button>
                         <span>
-                            Página {currentPage} de {totalPages}
+                            Mostrando {processedSeeds.length} de {seeds.length} · Página {currentPage} de{' '}
+                            {totalPages}
                         </span>
                         <button
                             type="button"
-                            className="seed-button secondary"
+                            className="seed-btn ghost"
                             disabled={currentPage === totalPages}
                             onClick={() => setPage((prev) => prev + 1)}
                         >
                             Siguiente
                         </button>
-                    </div>
+                    </nav>
                 </>
             )}
+
+            <dialog
+                ref={dialogRef}
+                className={`seed-dialog ${selectedSeed && !selectedSeed.active ? 'off' : ''}`}
+                aria-labelledby="seed-dialog-name"
+                onClose={() => setSelectedSeedId(null)}
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) setSelectedSeedId(null);
+                }}
+            >
+                {selectedSeed && (
+                    <>
+                        <div className="seed-dialog-head">
+                            <div>
+                                <h2 id="seed-dialog-name">{selectedSeed.name}</h2>
+                                <div className="seed-tags">
+                                    <span className="seed-type">
+                                        {SEED_TYPE_LABELS[selectedSeed.type] || selectedSeed.type}
+                                    </span>
+                                    <span className="seed-state">
+                                        {selectedSeed.active ? 'Activa' : 'Desactivada'}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="seed-x"
+                                aria-label="Cerrar"
+                                onClick={() => setSelectedSeedId(null)}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="seed-dialog-body">
+                            <p>{selectedSeed.description || 'Sin descripción.'}</p>
+
+                            <div className="seed-dk">
+                                <div>
+                                    <span>Fecha de creación</span>
+                                    <b>{formatDate(selectedSeed.createdDate)}</b>
+                                </div>
+                                {selectedSeed.updatedDate && (
+                                    <div>
+                                        <span>Última actualización</span>
+                                        <b>{formatDate(selectedSeed.updatedDate)}</b>
+                                    </div>
+                                )}
+                                <div>
+                                    <span>Stock disponible</span>
+                                    {lotsLoaded ? (
+                                        <b className={selectedStats.stock ? '' : 'seed-out'}>
+                                            {selectedStats.stock ? `${formatQty(selectedStats.stock)} uds` : 'Agotado'}
+                                        </b>
+                                    ) : (
+                                        <b>—</b>
+                                    )}
+                                </div>
+                                <div>
+                                    <span>Lotes</span>
+                                    {lotsLoaded ? (
+                                        <button
+                                            type="button"
+                                            className="seed-link"
+                                            onClick={() => handleSeeLots(selectedSeed.seedId)}
+                                        >
+                                            {selectedStats.count} {selectedStats.count === 1 ? 'lote' : 'lotes'} · ver →
+                                        </button>
+                                    ) : (
+                                        <b>—</b>
+                                    )}
+                                </div>
+                            </div>
+
+                            <section>
+                                <div className="seed-sh">
+                                    <h4>Proveedores</h4>
+                                    <small>
+                                        {selectedSeed.supplierNames.length}{' '}
+                                        {selectedSeed.supplierNames.length === 1 ? 'proveedor' : 'proveedores'}
+                                    </small>
+                                </div>
+                                {selectedSeed.supplierNames.length === 0 ? (
+                                    <p className="seed-hint">Esta semilla no tiene proveedores asociados.</p>
+                                ) : (
+                                    <ul className="seed-hl">
+                                        {selectedSeed.supplierNames.map((name) => (
+                                            <li key={name}>
+                                                <i />
+                                                <div>
+                                                    <b>{name}</b>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </section>
+                        </div>
+
+                        <div className="seed-dialog-foot">
+                            <button type="button" className="seed-gh" onClick={() => setSelectedSeedId(null)}>
+                                Cerrar
+                            </button>
+                            <div className="seed-dacts">
+                                <Link to={`/seeds/${selectedSeed.seedId}/edit`} className="seed-gh">
+                                    Editar
+                                </Link>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </dialog>
         </div>
     );
 }
