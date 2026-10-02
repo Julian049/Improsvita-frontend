@@ -1,42 +1,25 @@
-import {useEffect, useMemo, useState} from 'react';
-import {Link} from 'react-router-dom';
-import {getSuppliers} from './supplierApi';
-import {getAllSeeds} from '../seeds/seedApi';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { getSuppliers } from './supplierApi';
+import { getAllSeeds } from '../seeds/seedApi';
+import { formatDate } from '../../utils/dateUtils';
+import {
+    SUPPLIER_STATUS_FILTERS,
+    countSeedsBySupplier,
+    countSuppliersByStatus,
+    filterSuppliers,
+    getSupplierHue,
+    getSupplierInitials,
+    groupSuppliersByLetter,
+    searchSuppliers,
+    sortSuppliers,
+} from './supplierListUtils.js';
 import './SupplierList.css';
-
-const STOP_WORDS = /^(de|del|y|la|los|el)$/i;
-
-function getInitials(name) {
-    return String(name)
-        .replace(/[^\p{L}\s]/gu, '')
-        .split(/\s+/)
-        .filter((word) => word && !STOP_WORDS.test(word))
-        .slice(0, 2)
-        .map((word) => word[0])
-        .join('')
-        .toUpperCase();
-}
-
-function getHue(name) {
-    return ([...String(name)].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 6) * 22 + 80;
-}
-
-function getLetter(name) {
-    const first = String(name).trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '')[0];
-    return first && /[a-z]/i.test(first) ? first.toUpperCase() : '#';
-}
-
-function formatSince(dateValue) {
-    if (!dateValue) return '—';
-    const date = new Date(`${String(dateValue).slice(0, 10)}T12:00:00`);
-    if (Number.isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString('es-CO', {month: 'short', year: 'numeric'});
-}
 
 function PhoneIcon() {
     return (
         <svg className="supplier-ic" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/>
+            <path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z" />
         </svg>
     );
 }
@@ -44,8 +27,8 @@ function PhoneIcon() {
 function MailIcon() {
     return (
         <svg className="supplier-ic" viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3" y="5" width="18" height="14" rx="2"/>
-            <path d="M3 7l9 6 9-6"/>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M3 7l9 6 9-6" />
         </svg>
     );
 }
@@ -58,14 +41,14 @@ function SupplierListPage() {
     const [loadError, setLoadError] = useState(null);
 
     const [searchText, setSearchText] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState(SUPPLIER_STATUS_FILTERS.all);
 
     useEffect(() => {
         Promise.all([
             getSuppliers(),
             getAllSeeds().then(
-                (data) => ({data, ok: true}),
-                () => ({data: [], ok: false})
+                (data) => ({ data, ok: true }),
+                () => ({ data: [], ok: false })
             ),
         ])
             .then(([suppliersData, seedsResult]) => {
@@ -77,49 +60,21 @@ function SupplierListPage() {
             .finally(() => setIsLoading(false));
     }, []);
 
-    const seedCountBySupplier = useMemo(() => {
-        const map = new Map();
-        seeds.forEach((seed) => {
-            (seed.supplierIds || []).forEach((id) => {
-                const key = String(id);
-                map.set(key, (map.get(key) || 0) + 1);
-            });
-        });
-        return map;
-    }, [seeds]);
+    const seedCountBySupplier = useMemo(() => countSeedsBySupplier(seeds), [seeds]);
+    const counts = useMemo(() => countSuppliersByStatus(suppliers), [suppliers]);
 
-    const counts = useMemo(() => {
-        const active = suppliers.filter((supplier) => supplier.active).length;
-        return {all: suppliers.length, on: active, off: suppliers.length - active};
-    }, [suppliers]);
-
-    const filtered = useMemo(() => {
-        const query = searchText.toLowerCase().trim();
-        return suppliers
-            .filter((supplier) => {
-                const haystack = `${supplier.name || ''}${supplier.phone || ''}${supplier.email || ''}`.toLowerCase();
-                const matchesQuery = !query || haystack.includes(query);
-                const matchesStatus =
-                    statusFilter === 'all' || (statusFilter === 'on') === Boolean(supplier.active);
-                return matchesQuery && matchesStatus;
-            })
-            .sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
+    const processedSuppliers = useMemo(() => {
+        const searched = searchSuppliers(suppliers, searchText);
+        const filtered = filterSuppliers(searched, statusFilter);
+        return sortSuppliers(filtered);
     }, [suppliers, searchText, statusFilter]);
 
-    const groups = useMemo(() => {
-        const map = new Map();
-        filtered.forEach((supplier) => {
-            const letter = getLetter(supplier.name);
-            if (!map.has(letter)) map.set(letter, []);
-            map.get(letter).push(supplier);
-        });
-        return [...map.entries()];
-    }, [filtered]);
+    const groups = useMemo(() => groupSuppliersByLetter(processedSuppliers), [processedSuppliers]);
 
     function handleLetterClick(letter) {
         document
             .getElementById(`supplier-letter-${letter}`)
-            ?.scrollIntoView({behavior: 'smooth'});
+            ?.scrollIntoView({ behavior: 'smooth' });
     }
 
     if (isLoading) {
@@ -133,10 +88,8 @@ function SupplierListPage() {
     return (
         <div className="supplier-list-page">
             <div className="supplier-head">
-                <div>
-                    <h1>Contactos</h1>
-                </div>
-                <Link to="/suppliers/new" className="supplier-btn">
+                <h1>Contactos</h1>
+                <Link to="/suppliers/new" className="seed-button primary">
                     + Registrar proveedor
                 </Link>
             </div>
@@ -157,24 +110,24 @@ function SupplierListPage() {
                         <div className="supplier-chips" role="group" aria-label="Estado">
                             <button
                                 type="button"
-                                className={`supplier-chip ${statusFilter === 'all' ? 'on' : ''}`}
-                                onClick={() => setStatusFilter('all')}
+                                className={`supplier-chip ${statusFilter === SUPPLIER_STATUS_FILTERS.all ? 'on' : ''}`}
+                                onClick={() => setStatusFilter(SUPPLIER_STATUS_FILTERS.all)}
                             >
                                 Todos<em>{counts.all}</em>
                             </button>
                             <button
                                 type="button"
-                                className={`supplier-chip ${statusFilter === 'on' ? 'on' : ''}`}
-                                onClick={() => setStatusFilter('on')}
+                                className={`supplier-chip ${statusFilter === SUPPLIER_STATUS_FILTERS.active ? 'on' : ''}`}
+                                onClick={() => setStatusFilter(SUPPLIER_STATUS_FILTERS.active)}
                             >
-                                Activos<em>{counts.on}</em>
+                                Activos<em>{counts.active}</em>
                             </button>
                             <button
                                 type="button"
-                                className={`supplier-chip red ${statusFilter === 'off' ? 'on' : ''}`}
-                                onClick={() => setStatusFilter('off')}
+                                className={`supplier-chip red ${statusFilter === SUPPLIER_STATUS_FILTERS.inactive ? 'on' : ''}`}
+                                onClick={() => setStatusFilter(SUPPLIER_STATUS_FILTERS.inactive)}
                             >
-                                Desactivados<em>{counts.off}</em>
+                                Desactivados<em>{counts.inactive}</em>
                             </button>
                         </div>
                     </div>
@@ -197,9 +150,9 @@ function SupplierListPage() {
                                                     <div className="supplier-card-top">
                                                         <div
                                                             className="supplier-av"
-                                                            style={{'--h': getHue(supplier.name)}}
+                                                            style={{ '--h': getSupplierHue(supplier.name) }}
                                                         >
-                                                            {getInitials(supplier.name)}
+                                                            {getSupplierInitials(supplier.name)}
                                                         </div>
                                                         <div className="supplier-nm">
                                                             <h3 title={supplier.name}>{supplier.name}</h3>
@@ -211,33 +164,25 @@ function SupplierListPage() {
 
                                                     <div className="supplier-info">
                                                         <div>
-                                                            <PhoneIcon/>
+                                                            <PhoneIcon />
                                                             <span>{supplier.phone || '—'}</span>
                                                         </div>
                                                         <div>
-                                                            <MailIcon/>
+                                                            <MailIcon />
                                                             <span>{supplier.email || '—'}</span>
                                                         </div>
                                                     </div>
 
                                                     <div className="supplier-foot">
                                                         <div className="supplier-meta">
-                                                            Proveedor desde {formatSince(supplier.createdDate)}
+                                                            Proveedor desde {formatDate(supplier.createdDate)}
                                                             {seedsLoaded && (
                                                                 <>
-                                                                    <br/>
+                                                                    <br />
                                                                     Suministra {seedCount}{' '}
                                                                     {seedCount === 1 ? 'semilla' : 'semillas'}
                                                                 </>
                                                             )}
-                                                        </div>
-                                                        <div className="supplier-btns">
-                                                            <Link
-                                                                to={`/suppliers/${supplier.supplierId}/edit`}
-                                                                className="supplier-act"
-                                                            >
-                                                                Editar
-                                                            </Link>
                                                         </div>
                                                     </div>
                                                 </article>
@@ -262,12 +207,12 @@ function SupplierListPage() {
                         </nav>
                     </div>
 
-                    {filtered.length === 0 && (
+                    {processedSuppliers.length === 0 && (
                         <div className="supplier-list-message">No hay contactos con esos criterios.</div>
                     )}
 
                     <div className="supplier-pager">
-                        Mostrando {filtered.length} de {suppliers.length} contactos
+                        Mostrando {processedSuppliers.length} de {suppliers.length} contactos
                     </div>
                 </>
             )}
