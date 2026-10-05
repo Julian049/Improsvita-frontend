@@ -6,7 +6,7 @@ const MAIN_LINKS = [
     { to: '/seeds', label: 'Semillas' },
     { to: '/lots', label: 'Lotes' },
     { to: '/seedlings', label: 'Plántulas' },
-    { to: '/plantings', label: 'Siembras' },
+    { to: '/sowings', label: 'Siembras' },
 ];
 
 const SECONDARY_LINKS = [

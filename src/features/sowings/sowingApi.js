@@ -1,7 +1,7 @@
 import axiosClient from '../../api/axiosClient';
 import { toDateOnly } from '../../utils/dateUtils';
 import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
-import { MOCK_PLANTINGS } from '../../mocks/plantingMocks';
+import { MOCK_SOWINGS } from '../../mocks/sowingMocks';
 
 const FILTER_PARAMS = ['lotId', 'bedId', 'bedCode', 'status'];
 
@@ -18,7 +18,7 @@ function toSowRequest(payload) {
 
 function fromSowingResponse(sowing) {
     return {
-        plantingId: sowing.id,
+        sowingId: sowing.id,
         lotId: sowing.lotId,
         bedId: sowing.bedId,
         quantitySown: Number(sowing.quantitySown) || 0,
@@ -31,10 +31,10 @@ function fromSowingResponse(sowing) {
     };
 }
 
-export async function getPlantings({ mode, value } = {}) {
-    if (MOCK_CONFIG.plantings) {
+export async function getSowings({ mode, value } = {}) {
+    if (MOCK_CONFIG.sowings) {
         await mockDelay();
-        return MOCK_PLANTINGS;
+        return MOCK_SOWINGS;
     }
 
     const params = FILTER_PARAMS.includes(mode) && value ? { [mode]: value } : undefined;
@@ -42,19 +42,19 @@ export async function getPlantings({ mode, value } = {}) {
     return data.map(fromSowingResponse);
 }
 
-export const getAllPlantings = () => getPlantings();
+export const getAllSowings = () => getSowings();
 
-export async function createPlanting(payload) {
+export async function createSowing(payload) {
     const { data } = await axiosClient.post('/sowings', toSowRequest(payload));
     return fromSowingResponse(data);
 }
 
-export async function updatePlantingStatus(id, status) {
+export async function updateSowingStatus(id, status) {
     const { data } = await axiosClient.put(`/sowings/${id}/status`, { status });
     return fromSowingResponse(data);
 }
 
-export async function updatePlantingGermination(id, germinatedQuantity) {
+export async function updateSowingGermination(id, germinatedQuantity) {
     const { data } = await axiosClient.put(`/sowings/${id}/germination`, {
         germinatedQuantity: Number(germinatedQuantity),
     });

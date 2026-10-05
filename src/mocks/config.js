@@ -3,7 +3,7 @@ export const MOCK_CONFIG = {
     seeds: false,
     suppliers: false,
     locations: false,
-    plantings: false,
+    sowings: false,
     beds: false,
 
     delayMs: 300,

@@ -1,43 +1,45 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createPlanting } from '../plantingApi.js';
+import { createSowing } from '../sowingApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
-import { getAllLots } from '../../lots/lotApi.js';
+import { getLots } from '../../lots/lotApi.js';
 import { getBeds } from '../../beds/bedApi.js';
 import { getApiErrorMessage } from '../../../api/apiError.js';
 import { formatDate } from '../../../utils/dateUtils.js';
 import { formatQty } from '../../../utils/numberUtils.js';
 import {
-    PLANTING_FIELD_LABELS,
-    PLANTING_FORM_INITIAL_VALUES,
-    PLANTING_LIMITS,
-    PLANTING_MESSAGES,
-    PLANTING_REQUIRED_FIELDS,
-    validatePlantingForm,
-} from '../plantingValidation.js';
-import { getSowableLotGroups, getTodayDateString } from '../plantingUtils.js';
+    SOWING_FIELD_LABELS,
+    SOWING_FORM_INITIAL_VALUES,
+    SOWING_LIMITS,
+    SOWING_MESSAGES,
+    SOWING_REQUIRED_FIELDS,
+    validateSowingForm,
+} from '../sowingValidation.js';
+import { getTodayDateString, groupLotsBySeed } from '../sowingUtils.js';
 import { SEED_TYPE_OPTIONS } from '../../seeds/seedValidation.js';
-import './PlantingForm.css';
+import './SowingForm.css';
 
 const SEED_TYPE_LABELS = Object.fromEntries(
     SEED_TYPE_OPTIONS.map((option) => [option.value, option.label])
 );
 
+const fetchAvailableLots = () => getLots({ mode: 'status', value: 'AVAILABLE' });
+
 function fetchInventory() {
-    return Promise.all([getAllSeeds(), getAllLots(), getBeds()]);
+    return Promise.all([getAllSeeds(), fetchAvailableLots(), getBeds()]);
 }
 
 function Field({ label, required, error, hint, children }) {
     return (
-        <label className="planting-field">
+        <label className="sowing-field">
             <span>
                 {label}
                 {required && ' *'}
             </span>
             {children}
-            {hint && !error && <small className="planting-hint">{hint}</small>}
+            {hint && !error && <small className="sowing-hint">{hint}</small>}
             {error && (
-                <small className="planting-field-error" role="alert">
+                <small className="sowing-field-error" role="alert">
                     {error}
                 </small>
             )}
@@ -45,10 +47,10 @@ function Field({ label, required, error, hint, children }) {
     );
 }
 
-function PlantingFormPage() {
+function SowingFormPage() {
     const navigate = useNavigate();
 
-    const [values, setValues] = useState(PLANTING_FORM_INITIAL_VALUES);
+    const [values, setValues] = useState(SOWING_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
     const [seeds, setSeeds] = useState([]);
     const [lots, setLots] = useState([]);
@@ -80,8 +82,8 @@ function PlantingFormPage() {
         };
     }, []);
 
-    const lotGroups = useMemo(() => getSowableLotGroups(lots, seeds), [lots, seeds]);
-    const activeBeds = useMemo(() => beds.filter((bed) => bed.active), [beds]);
+    const lotGroups = useMemo(() => groupLotsBySeed(lots, seeds), [lots, seeds]);
+    const hasActiveBed = beds.some((bed) => bed.active);
 
     const selectedLot =
         lotGroups
@@ -90,8 +92,8 @@ function PlantingFormPage() {
     const availableStock = selectedLot ? Number(selectedLot.availableQuantity) : null;
 
     const today = getTodayDateString();
-    const isRequired = (field) => PLANTING_REQUIRED_FIELDS.includes(field);
-    const canSubmit = lotGroups.length > 0 && activeBeds.length > 0;
+    const isRequired = (field) => SOWING_REQUIRED_FIELDS.includes(field);
+    const canSubmit = lotGroups.length > 0 && hasActiveBed;
 
     function handleChange(field) {
         return (e) => {
@@ -107,7 +109,7 @@ function PlantingFormPage() {
     }
 
     function refreshLots() {
-        getAllLots()
+        fetchAvailableLots()
             .then(setLots)
             .catch(() => {});
     }
@@ -116,12 +118,12 @@ function PlantingFormPage() {
         e.preventDefault();
         setSubmitMessage(null);
 
-        const validationErrors = validatePlantingForm(values, availableStock);
+        const validationErrors = validateSowingForm(values, availableStock);
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
             const readableFieldNames = Object.keys(validationErrors)
-                .map((field) => PLANTING_FIELD_LABELS[field] || field)
+                .map((field) => SOWING_FIELD_LABELS[field] || field)
                 .join(', ');
             setSubmitMessage({
                 type: 'error',
@@ -132,17 +134,17 @@ function PlantingFormPage() {
 
         setIsSubmitting(true);
         try {
-            const planting = await createPlanting(values);
+            const sowing = await createSowing(values);
             setSubmitMessage({
                 type: 'success',
-                text: `${PLANTING_MESSAGES.success} Siembra n.° ${planting.plantingId}: se descontaron ${formatQty(planting.quantitySown)} semillas del lote ${selectedLot.lotNumber}.`,
+                text: `${SOWING_MESSAGES.success} Siembra n.° ${sowing.sowingId}: se descontaron ${formatQty(sowing.quantitySown)} semillas del lote ${selectedLot.lotNumber}.`,
             });
-            setValues(PLANTING_FORM_INITIAL_VALUES);
+            setValues(SOWING_FORM_INITIAL_VALUES);
             refreshLots();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
-                text: getApiErrorMessage(err, PLANTING_MESSAGES.saveError),
+                text: getApiErrorMessage(err, SOWING_MESSAGES.saveError),
             });
         } finally {
             setIsSubmitting(false);
@@ -150,38 +152,38 @@ function PlantingFormPage() {
     }
 
     if (isLoading) {
-        return <div className="planting-form-loading">Cargando inventario de lotes y camas...</div>;
+        return <div className="sowing-form-loading">Cargando inventario de lotes y camas...</div>;
     }
 
     if (loadError) {
         return (
-            <div className="planting-form-page">
-                <div className="planting-form-message error">{loadError}</div>
+            <div className="sowing-form-page">
+                <div className="sowing-form-message error">{loadError}</div>
             </div>
         );
     }
 
     return (
-        <div className="planting-form-page">
-            <div className="planting-form-card">
-                <div className="planting-form-header">
+        <div className="sowing-form-page">
+            <div className="sowing-form-card">
+                <div className="sowing-form-header">
                     <button
                         type="button"
-                        className="planting-back"
-                        onClick={() => navigate('/plantings')}
+                        className="sowing-back"
+                        onClick={() => navigate('/sowings')}
                         aria-label="Volver a siembras"
                     >
                         ←
                     </button>
                     <h2>Registrar siembra</h2>
                 </div>
-                <p className="planting-form-subtitle">
+                <p className="sowing-form-subtitle">
                     Siembra semillas de un lote en una cama. La cantidad se descuenta automáticamente del lote.
                 </p>
 
                 {lotGroups.length === 0 && !submitMessage && (
-                    <div className="planting-form-empty">
-                        <div className="planting-form-message error">
+                    <div className="sowing-form-empty">
+                        <div className="sowing-form-message error">
                             No hay lotes con stock disponible para sembrar.
                         </div>
                         <Link to="/lots/new" className="seed-button primary">
@@ -190,14 +192,14 @@ function PlantingFormPage() {
                     </div>
                 )}
 
-                {lotGroups.length > 0 && activeBeds.length === 0 && (
-                    <div className="planting-form-message error">
+                {lotGroups.length > 0 && !hasActiveBed && (
+                    <div className="sowing-form-message error">
                         No hay camas activas registradas. Registra una cama para poder sembrar.
                     </div>
                 )}
 
                 {(canSubmit || submitMessage) && (
-                    <form onSubmit={handleSubmit} className="planting-form" noValidate>
+                    <form onSubmit={handleSubmit} className="sowing-form" noValidate>
                         <Field label="Lote" required={isRequired('lotId')} error={errors.lotId}>
                             <select
                                 value={values.lotId}
@@ -206,10 +208,11 @@ function PlantingFormPage() {
                             >
                                 <option value="">Seleccione el lote a sembrar</option>
                                 {lotGroups.map((group) => (
-                                    <optgroup key={group.seed.seedId} label={group.seed.name}>
+                                    <optgroup key={group.seedId} label={group.seedName}>
                                         {group.lots.map((lot) => (
                                             <option key={lot.lotId} value={lot.lotId}>
                                                 Lote {lot.lotNumber} — {formatQty(lot.availableQuantity)} disponibles
+                                                {lot.isExpired ? ' · vencido' : ''}
                                             </option>
                                         ))}
                                     </optgroup>
@@ -218,7 +221,7 @@ function PlantingFormPage() {
                         </Field>
 
                         {selectedLot && (
-                            <dl className="planting-stock-info">
+                            <dl className="sowing-stock-info">
                                 <div>
                                     <dt>Semilla</dt>
                                     <dd>{selectedLot.seedName}</dd>
@@ -238,7 +241,7 @@ function PlantingFormPage() {
                             </dl>
                         )}
 
-                        <div className="planting-form-row">
+                        <div className="sowing-form-row">
                             <Field label="Cama" required={isRequired('bedId')} error={errors.bedId}>
                                 <select
                                     value={values.bedId}
@@ -246,9 +249,11 @@ function PlantingFormPage() {
                                     aria-invalid={Boolean(errors.bedId)}
                                 >
                                     <option value="">Seleccione la cama</option>
-                                    {activeBeds.map((bed) => (
-                                        <option key={bed.bedId} value={bed.bedId}>
+                                    {beds.map((bed) => (
+                                        // El backend rechaza sembrar en una cama inactiva.
+                                        <option key={bed.bedId} value={bed.bedId} disabled={!bed.active}>
                                             {bed.code} — capacidad {formatQty(bed.maxCapacity)}
+                                            {bed.active ? '' : ' · inactiva'}
                                         </option>
                                     ))}
                                 </select>
@@ -273,7 +278,7 @@ function PlantingFormPage() {
                             </Field>
                         </div>
 
-                        <div className="planting-form-row">
+                        <div className="sowing-form-row">
                             <Field
                                 label="Fecha de siembra"
                                 required={isRequired('sowingDate')}
@@ -307,10 +312,10 @@ function PlantingFormPage() {
                             label="Notas"
                             required={isRequired('notes')}
                             error={errors.notes}
-                            hint={`${values.notes.length}/${PLANTING_LIMITS.notesMax}`}
+                            hint={`${values.notes.length}/${SOWING_LIMITS.notesMax}`}
                         >
                             <textarea
-                                maxLength={PLANTING_LIMITS.notesMax}
+                                maxLength={SOWING_LIMITS.notesMax}
                                 value={values.notes}
                                 onChange={handleChange('notes')}
                                 aria-invalid={Boolean(errors.notes)}
@@ -319,18 +324,18 @@ function PlantingFormPage() {
 
                         {submitMessage && (
                             <div
-                                className={`planting-form-message ${submitMessage.type}`}
+                                className={`sowing-form-message ${submitMessage.type}`}
                                 role={submitMessage.type === 'error' ? 'alert' : 'status'}
                             >
                                 {submitMessage.text}
                             </div>
                         )}
 
-                        <div className="planting-form-actions">
+                        <div className="sowing-form-actions">
                             <button
                                 type="button"
                                 className="seed-button secondary"
-                                onClick={() => navigate('/plantings')}
+                                onClick={() => navigate('/sowings')}
                             >
                                 Cancelar
                             </button>
@@ -349,4 +354,4 @@ function PlantingFormPage() {
     );
 }
 
-export default PlantingFormPage;
+export default SowingFormPage;

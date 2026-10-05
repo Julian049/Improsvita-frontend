@@ -1,6 +1,6 @@
 import { toLocalDate } from '../../utils/dateUtils';
 
-export const PLANTING_FIELD_LABELS = {
+export const SOWING_FIELD_LABELS = {
     lotId: 'Lote',
     bedId: 'Cama',
     quantity: 'Cantidad',
@@ -9,14 +9,14 @@ export const PLANTING_FIELD_LABELS = {
     notes: 'Notas',
 };
 
-export const PLANTING_REQUIRED_FIELDS = ['lotId', 'bedId', 'quantity', 'sowingDate'];
+export const SOWING_REQUIRED_FIELDS = ['lotId', 'bedId', 'quantity', 'sowingDate'];
 
-export const PLANTING_LIMITS = {
+export const SOWING_LIMITS = {
     quantityDigits: 6,
     notesMax: 300,
 };
 
-export const PLANTING_MESSAGES = {
+export const SOWING_MESSAGES = {
     success: 'Siembra registrada exitosamente.',
     invalidQuantity: 'La cantidad debe ser un número entero mayor que cero.',
     exceedsStock: 'La cantidad solicitada supera el stock disponible del lote.',
@@ -24,7 +24,7 @@ export const PLANTING_MESSAGES = {
     saveError: 'Error al registrar la siembra. Intente nuevamente o contacte al administrador.',
 };
 
-export const PLANTING_FORM_INITIAL_VALUES = {
+export const SOWING_FORM_INITIAL_VALUES = {
     lotId: '',
     bedId: '',
     quantity: '',
@@ -42,22 +42,22 @@ function isPositiveInteger(value, maxDigits) {
     return /^\d+$/.test(text) && Number(text) > 0 && text.length <= maxDigits;
 }
 
-export function validatePlantingForm(values, availableStock = null) {
+export function validateSowingForm(values, availableStock = null) {
     const errors = {};
 
-    PLANTING_REQUIRED_FIELDS.forEach((field) => {
+    SOWING_REQUIRED_FIELDS.forEach((field) => {
         if (isEmpty(values[field])) errors[field] = 'Este campo es obligatorio.';
     });
 
     if (!isEmpty(values.lotId) && availableStock === null) {
-        errors.lotId = PLANTING_MESSAGES.noStock;
+        errors.lotId = SOWING_MESSAGES.noStock;
     }
 
     if (!isEmpty(values.quantity)) {
-        if (!isPositiveInteger(values.quantity, PLANTING_LIMITS.quantityDigits)) {
-            errors.quantity = PLANTING_MESSAGES.invalidQuantity;
+        if (!isPositiveInteger(values.quantity, SOWING_LIMITS.quantityDigits)) {
+            errors.quantity = SOWING_MESSAGES.invalidQuantity;
         } else if (availableStock !== null && Number(values.quantity) > availableStock) {
-            errors.quantity = PLANTING_MESSAGES.exceedsStock;
+            errors.quantity = SOWING_MESSAGES.exceedsStock;
         }
     }
 
@@ -76,8 +76,8 @@ export function validatePlantingForm(values, availableStock = null) {
         }
     }
 
-    if (!isEmpty(values.notes) && values.notes.length > PLANTING_LIMITS.notesMax) {
-        errors.notes = `Máximo ${PLANTING_LIMITS.notesMax} caracteres.`;
+    if (!isEmpty(values.notes) && values.notes.length > SOWING_LIMITS.notesMax) {
+        errors.notes = `Máximo ${SOWING_LIMITS.notesMax} caracteres.`;
     }
 
     return errors;
