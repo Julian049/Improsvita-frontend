@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getSeedCountsBySupplier, getSuppliers } from './supplierApi';
+import { getSeedCountsBySupplier, getSupplierByName, getSuppliers } from './supplierApi';
 import {
     getSupplierHue,
     getSupplierInitials,
     groupSuppliersByLetter,
-    searchSuppliers,
     sortSuppliers,
 } from './supplierListUtils.js';
 import './SupplierList.css';
@@ -27,6 +26,11 @@ function MailIcon() {
     );
 }
 
+function fetchSuppliers(name) {
+    if (!name) return getSuppliers();
+    return getSupplierByName(name).then((supplier) => (supplier ? [supplier] : []));
+}
+
 function SupplierListPage() {
     const [suppliers, setSuppliers] = useState([]);
     const [seedCountBySupplier, setSeedCountBySupplier] = useState(new Map());
@@ -34,12 +38,13 @@ function SupplierListPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
 
-    const [searchText, setSearchText] = useState('');
+    const [draftName, setDraftName] = useState('');
+    const [appliedName, setAppliedName] = useState('');
 
     useEffect(() => {
         let cancelled = false;
 
-        getSuppliers()
+        fetchSuppliers(appliedName)
             .then((suppliersData) => {
                 if (cancelled) return;
                 setSuppliers(suppliersData);
@@ -53,7 +58,9 @@ function SupplierListPage() {
                     .catch(() => {});
             })
             .catch(() => {
-                if (!cancelled) setLoadError('No se pudo cargar la lista de proveedores.');
+                if (cancelled) return;
+                setSuppliers([]);
+                setLoadError('No se pudo cargar la lista de proveedores.');
             })
             .finally(() => {
                 if (!cancelled) setIsLoading(false);
@@ -62,14 +69,28 @@ function SupplierListPage() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [appliedName]);
 
-    const processedSuppliers = useMemo(
-        () => sortSuppliers(searchSuppliers(suppliers, searchText)),
-        [suppliers, searchText]
-    );
+    const sortedSuppliers = useMemo(() => sortSuppliers(suppliers), [suppliers]);
+    const groups = useMemo(() => groupSuppliersByLetter(sortedSuppliers), [sortedSuppliers]);
 
-    const groups = useMemo(() => groupSuppliersByLetter(processedSuppliers), [processedSuppliers]);
+    function applySearch(name) {
+        if (name === appliedName) return;
+        setIsLoading(true);
+        setLoadError(null);
+        setSeedCountsLoaded(false);
+        setAppliedName(name);
+    }
+
+    function handleSearch(e) {
+        e.preventDefault();
+        applySearch(draftName.trim());
+    }
+
+    function handleClearSearch() {
+        setDraftName('');
+        applySearch('');
+    }
 
     function handleLetterClick(letter) {
         document
@@ -77,12 +98,97 @@ function SupplierListPage() {
             ?.scrollIntoView({ behavior: 'smooth' });
     }
 
-    if (isLoading) {
-        return <div className="supplier-list-loading">Cargando proveedores...</div>;
-    }
+    function renderContent() {
+        if (isLoading) {
+            return <div className="supplier-list-loading">Cargando proveedores...</div>;
+        }
 
-    if (loadError) {
-        return <div className="supplier-list-message error">{loadError}</div>;
+        if (loadError) {
+            return <div className="supplier-list-message error">{loadError}</div>;
+        }
+
+        if (suppliers.length === 0) {
+            return (
+                <div className="supplier-list-message">
+                    {appliedName
+                        ? `No existe un proveedor llamado "${appliedName}".`
+                        : 'No hay proveedores registrados todavía.'}
+                </div>
+            );
+        }
+
+        return (
+            <>
+                <div className="supplier-wrap">
+                    <div>
+                        {groups.map(([letter, items]) => (
+                            <div key={letter}>
+                                <div className="supplier-letter" id={`supplier-letter-${letter}`}>
+                                    {letter}
+                                </div>
+                                <div className="supplier-grid">
+                                    {items.map((supplier) => {
+                                        const seedCount = seedCountBySupplier.get(String(supplier.supplierId)) || 0;
+                                        return (
+                                            <article key={supplier.supplierId} className="supplier-card">
+                                                <div className="supplier-card-top">
+                                                    <div
+                                                        className="supplier-av"
+                                                        style={{ '--h': getSupplierHue(supplier.name) }}
+                                                    >
+                                                        {getSupplierInitials(supplier.name)}
+                                                    </div>
+                                                    <div className="supplier-nm">
+                                                        <h3 title={supplier.name}>{supplier.name}</h3>
+                                                    </div>
+                                                </div>
+
+                                                <div className="supplier-info">
+                                                    <div>
+                                                        <PhoneIcon />
+                                                        <span>{supplier.phone || '—'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <MailIcon />
+                                                        <span>{supplier.email || '—'}</span>
+                                                    </div>
+                                                </div>
+
+                                                {seedCountsLoaded && (
+                                                    <div className="supplier-foot">
+                                                        <div className="supplier-meta">
+                                                            Suministra {seedCount}{' '}
+                                                            {seedCount === 1 ? 'semilla' : 'semillas'}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </article>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <nav className="supplier-rail" aria-label="Índice alfabético">
+                        {groups.map(([letter]) => (
+                            <button
+                                key={letter}
+                                type="button"
+                                aria-label={`Ir a ${letter}`}
+                                onClick={() => handleLetterClick(letter)}
+                            >
+                                {letter}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+
+                <div className="supplier-pager">
+                    Mostrando {suppliers.length} {suppliers.length === 1 ? 'contacto' : 'contactos'}
+                </div>
+            </>
+        );
     }
 
     return (
@@ -94,95 +200,26 @@ function SupplierListPage() {
                 </Link>
             </div>
 
-            {suppliers.length === 0 ? (
-                <div className="supplier-list-message">No hay proveedores registrados todavía.</div>
-            ) : (
-                <>
-                    <div className="supplier-bar">
-                        <input
-                            type="search"
-                            className="supplier-search"
-                            placeholder="Buscar por nombre, teléfono o correo"
-                            aria-label="Buscar contactos"
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                        />
-                    </div>
+            <form className="supplier-bar" onSubmit={handleSearch}>
+                <input
+                    type="search"
+                    className="supplier-search"
+                    placeholder="Nombre exacto del proveedor"
+                    aria-label="Buscar proveedor por nombre exacto"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                />
+                <button type="submit" className="supplier-chip on" disabled={!draftName.trim()}>
+                    Buscar
+                </button>
+                {appliedName && (
+                    <button type="button" className="supplier-chip" onClick={handleClearSearch}>
+                        Limpiar búsqueda
+                    </button>
+                )}
+            </form>
 
-                    <div className="supplier-wrap">
-                        <div>
-                            {groups.map(([letter, items]) => (
-                                <div key={letter}>
-                                    <div className="supplier-letter" id={`supplier-letter-${letter}`}>
-                                        {letter}
-                                    </div>
-                                    <div className="supplier-grid">
-                                        {items.map((supplier) => {
-                                            const seedCount = seedCountBySupplier.get(String(supplier.supplierId)) || 0;
-                                            return (
-                                                <article key={supplier.supplierId} className="supplier-card">
-                                                    <div className="supplier-card-top">
-                                                        <div
-                                                            className="supplier-av"
-                                                            style={{ '--h': getSupplierHue(supplier.name) }}
-                                                        >
-                                                            {getSupplierInitials(supplier.name)}
-                                                        </div>
-                                                        <div className="supplier-nm">
-                                                            <h3 title={supplier.name}>{supplier.name}</h3>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="supplier-info">
-                                                        <div>
-                                                            <PhoneIcon />
-                                                            <span>{supplier.phone || '—'}</span>
-                                                        </div>
-                                                        <div>
-                                                            <MailIcon />
-                                                            <span>{supplier.email || '—'}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {seedCountsLoaded && (
-                                                        <div className="supplier-foot">
-                                                            <div className="supplier-meta">
-                                                                Suministra {seedCount}{' '}
-                                                                {seedCount === 1 ? 'semilla' : 'semillas'}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </article>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <nav className="supplier-rail" aria-label="Índice alfabético">
-                            {groups.map(([letter]) => (
-                                <button
-                                    key={letter}
-                                    type="button"
-                                    aria-label={`Ir a ${letter}`}
-                                    onClick={() => handleLetterClick(letter)}
-                                >
-                                    {letter}
-                                </button>
-                            ))}
-                        </nav>
-                    </div>
-
-                    {processedSuppliers.length === 0 && (
-                        <div className="supplier-list-message">No hay contactos con esos criterios.</div>
-                    )}
-
-                    <div className="supplier-pager">
-                        Mostrando {processedSuppliers.length} de {suppliers.length} contactos
-                    </div>
-                </>
-            )}
+            {renderContent()}
         </div>
     );
 }

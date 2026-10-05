@@ -29,6 +29,16 @@ export async function getSuppliers() {
     return data.map(fromSupplierResponse);
 }
 
+export async function getSupplierByName(name) {
+    try {
+        const { data } = await axiosClient.get(`/suppliers/name/${encodeURIComponent(name)}`);
+        return fromSupplierResponse(data);
+    } catch (error) {
+        if (error.response?.status === 404) return null;
+        throw error;
+    }
+}
+
 export async function getSeedCountsBySupplier(supplierIds) {
     if (MOCK_CONFIG.suppliers) {
         await mockDelay();

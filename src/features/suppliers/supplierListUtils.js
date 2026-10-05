@@ -1,18 +1,5 @@
 const STOP_WORDS = /^(de|del|y|la|los|el)$/i;
 
-export function searchSuppliers(suppliers, searchText) {
-    const normalized = searchText.trim().toLowerCase();
-    if (!normalized) return suppliers;
-
-    return suppliers.filter((supplier) => {
-        const haystack = [supplier.name, supplier.phone, supplier.email]
-            .filter((v) => v !== undefined && v !== null && v !== '')
-            .join(' ')
-            .toLowerCase();
-        return haystack.includes(normalized);
-    });
-}
-
 export function sortSuppliers(suppliers) {
     return [...suppliers].sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
 }
