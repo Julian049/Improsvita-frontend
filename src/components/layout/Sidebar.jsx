@@ -13,7 +13,8 @@ const SECONDARY_LINKS = [
     // { to: '/reservations', label: 'Reservas' },
     // { to: '/sales', label: 'Ventas' },
     { to: '/suppliers', label: 'Contactos' },
-    // { to: '/locations', label: 'Ubicaciones' },
+    { to: '/locations', label: 'Ubicaciones' },
+    { to: '/beds', label: 'Camas' },
 ];
 
 function SidebarLink({ to, label, end }) {
