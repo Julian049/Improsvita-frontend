@@ -1,10 +1,10 @@
 export const MOCK_CONFIG = {
-    lots: true,
-    seeds: true,
-    suppliers: true,
-    locations: true,
-    plantings: true,
-    beds: true,
+    lots: false,
+    seeds: false,
+    suppliers: false,
+    locations: false,
+    sowings: false,
+    beds: false,
 
     delayMs: 300,
 };

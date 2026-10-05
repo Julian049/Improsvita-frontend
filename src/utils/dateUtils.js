@@ -1,8 +1,3 @@
-export function toIsoDateTime(dateOnlyString) {
-    if (!dateOnlyString) return null;
-    return `${dateOnlyString}T00:00:00`;
-}
-
 export function toDateOnly(isoDateTimeString) {
     if (!isoDateTimeString) return '';
     return String(isoDateTimeString).slice(0, 10);

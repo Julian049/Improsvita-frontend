@@ -7,6 +7,7 @@ import {
     setStoredUser,
 } from '../api/tokenStorage';
 import { loginRequest, registerRequest } from '../api/authApi';
+import { getApiErrorMessage } from '../api/apiError';
 
 const AuthContext = createContext(null);
 
@@ -33,9 +34,11 @@ export function AuthProvider({ children }) {
             applyAuthResponse(data);
             return { success: true };
         } catch (err) {
+            // El backend responde 403 sin cuerpo cuando las credenciales no coinciden.
             const message =
-                err.response?.data?.message ||
-                'No se pudo iniciar sesión. Verifica tus credenciales.';
+                err.response?.status === 403
+                    ? 'Correo o contraseña incorrectos.'
+                    : getApiErrorMessage(err, 'No se pudo iniciar sesión. Intenta nuevamente.');
             setError(message);
             return { success: false, message };
         }
@@ -48,9 +51,7 @@ export function AuthProvider({ children }) {
             applyAuthResponse(data);
             return { success: true };
         } catch (err) {
-            const message =
-                err.response?.data?.message ||
-                'No se pudo completar el registro.';
+            const message = getApiErrorMessage(err, 'No se pudo completar el registro.');
             setError(message);
             return { success: false, message };
         }

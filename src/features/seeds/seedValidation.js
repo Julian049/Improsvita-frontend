@@ -23,9 +23,6 @@ export function validateSeedForm(values) {
 
     if (isEmpty(values.name)) errors.name = 'Este campo es obligatorio.';
     if (isEmpty(values.type)) errors.type = 'Este campo es obligatorio.';
-    if (!values.supplierIds || values.supplierIds.length === 0) {
-        errors.supplierIds = 'Selecciona al menos un proveedor.';
-    }
 
     if (!isEmpty(values.name) && values.name.length > NAME_MAX) {
         errors.name = `Máximo ${NAME_MAX} caracteres.`;
@@ -42,5 +39,4 @@ export const SEED_FORM_INITIAL_VALUES = {
     type: '',
     description: '',
     supplierIds: [],
-    active: true,
 };

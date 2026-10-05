@@ -14,7 +14,8 @@ const PHONE_REGEX = /^\d+$/;
 export function validateSupplierForm(values) {
     const errors = {};
 
-    ['name', 'phone'].forEach((field) => {
+    // name, phone y email son NOT NULL en el backend; email además es único.
+    ['name', 'phone', 'email'].forEach((field) => {
         if (isEmpty(values[field])) errors[field] = 'Este campo es obligatorio.';
     });
 

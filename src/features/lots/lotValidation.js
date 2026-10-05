@@ -2,14 +2,23 @@ import { toLocalDate } from '../../utils/dateUtils';
 
 export const LOT_FIELD_LABELS = {
     seedId: 'Semilla',
+    supplierId: 'Proveedor',
     locationId: 'Ubicación',
     lotNumber: 'Número de lote',
+    quantity: 'Cantidad',
     entryDate: 'Fecha de ingreso',
     dueDate: 'Fecha de vencimiento',
-    initialQuantity: 'Cantidad inicial',
 };
 
-export const LOT_STATUS_LABELS = {};
+// Campos sin los que POST /inventory/entries falla; las fechas son opcionales.
+export const LOT_REQUIRED_FIELDS = ['seedId', 'supplierId', 'locationId', 'lotNumber', 'quantity'];
+
+export const LOT_STATUS_LABELS = {
+    AVAILABLE: 'Disponible',
+    DEPLETED: 'Agotado',
+    EXPIRED: 'Vencido',
+    DISCARDED: 'Descartado',
+};
 
 export function getLotStatusLabel(status) {
     return LOT_STATUS_LABELS[status] || status || '—';
@@ -22,7 +31,7 @@ function isEmpty(value) {
 export function validateLotForm(values) {
     const errors = {};
 
-    Object.keys(LOT_FIELD_LABELS).forEach((field) => {
+    LOT_REQUIRED_FIELDS.forEach((field) => {
         if (isEmpty(values[field])) errors[field] = 'Este campo es obligatorio.';
     });
 
@@ -33,10 +42,10 @@ export function validateLotForm(values) {
         }
     }
 
-    if (!isEmpty(values.initialQuantity)) {
-        const quantity = Number(values.initialQuantity);
+    if (!isEmpty(values.quantity)) {
+        const quantity = Number(values.quantity);
         if (Number.isNaN(quantity) || quantity <= 0) {
-            errors.initialQuantity = 'La cantidad debe ser un número válido y mayor que cero.';
+            errors.quantity = 'La cantidad debe ser un número válido y mayor que cero.';
         }
     }
 
@@ -59,9 +68,10 @@ export function validateLotForm(values) {
 
 export const LOT_FORM_INITIAL_VALUES = {
     seedId: '',
+    supplierId: '',
     locationId: '',
     lotNumber: '',
+    quantity: '',
     entryDate: '',
     dueDate: '',
-    initialQuantity: '',
 };

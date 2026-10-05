@@ -1,17 +1,13 @@
 import {useEffect, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
-import {getAllSeeds} from '../seedApi.js';
+import {getSeeds} from '../seedApi.js';
 import {getSuppliers} from '../../suppliers/supplierApi';
 import {getAllLots} from '../../lots/lotApi.js';
 import {SEED_TYPE_OPTIONS} from '../seedValidation.js';
-import {daysUntil} from '../../../utils/daysUntil';
 import {
-    SEED_FILTERS_INITIAL_STATE,
-    SORT_OPTIONS,
-    filterSeeds,
+    SEED_FILTER_INITIAL_STATE,
+    SEED_FILTER_MODES,
     paginateSeeds,
-    searchSeeds,
-    sortSeeds,
 } from './seedListUtils.js';
 import {SeedCard} from './SeedCard';
 import {SeedDetailModal} from './SeedDetailModal';
@@ -20,8 +16,6 @@ import './SeedList.css';
 const SEED_TYPE_LABELS = Object.fromEntries(
     SEED_TYPE_OPTIONS.map((option) => [option.value, option.label])
 );
-
-const EXPIRING_DAYS = 30;
 
 const sumStock = (lots) => lots.reduce((total, lot) => total + (Number(lot.availableQuantity) || 0), 0);
 
@@ -35,23 +29,26 @@ export const SeedListPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
 
-    const [searchText, setSearchText] = useState('');
-    const [filters, setFilters] = useState(SEED_FILTERS_INITIAL_STATE);
-    const [sortBy, setSortBy] = useState('name_asc');
+    const [isFetchingSeeds, setIsFetchingSeeds] = useState(true);
+    const [seedsError, setSeedsError] = useState(null);
+
+    const [draftMode, setDraftMode] = useState('');
+    const [draftValue, setDraftValue] = useState('');
+    const [filterError, setFilterError] = useState('');
+    const [appliedFilter, setAppliedFilter] = useState(SEED_FILTER_INITIAL_STATE);
+
     const [page, setPage] = useState(1);
     const [selectedSeedId, setSelectedSeedId] = useState(null);
 
     useEffect(() => {
         Promise.all([
-            getAllSeeds(),
             getSuppliers(),
             getAllLots().then(
                 (data) => ({data, ok: true}),
                 () => ({data: [], ok: false})
             ),
         ])
-            .then(([seedsData, suppliersData, lotsResult]) => {
-                setSeeds(seedsData);
+            .then(([suppliersData, lotsResult]) => {
                 setSuppliers(suppliersData);
                 setLots(lotsResult.data);
                 setLotsLoaded(lotsResult.ok);
@@ -61,6 +58,30 @@ export const SeedListPage = () => {
             })
             .finally(() => setIsLoading(false));
     }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+        setIsFetchingSeeds(true);
+        setSeedsError(null);
+
+        getSeeds(appliedFilter)
+            .then((data) => {
+                if (!cancelled) setSeeds(data);
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setSeeds([]);
+                    setSeedsError('No se pudo cargar el catálogo de semillas.');
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setIsFetchingSeeds(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [appliedFilter]);
 
     const seedsWithSupplierNames = useMemo(() => {
         const nameById = new Map(suppliers.map((s) => [String(s.supplierId), s.name]));
@@ -82,32 +103,10 @@ export const SeedListPage = () => {
         });
         return map;
     }, [lots]);
-    useMemo(
-        () =>
-            lots.filter((lot) => {
-                const days = daysUntil(lot.dueDate);
-                return (
-                    (Number(lot.availableQuantity) || 0) > 0 &&
-                    days !== null &&
-                    days >= 0 &&
-                    days <= EXPIRING_DAYS
-                );
-            }).length,
-        [lots]
-    );
-    useMemo(() => {
-        const active = seeds.filter((seed) => seed.active).length;
-        return {total: seeds.length, active, inactive: seeds.length - active};
-    }, [seeds]);
-    const processedSeeds = useMemo(() => {
-        const searched = searchSeeds(seedsWithSupplierNames, searchText);
-        const filtered = filterSeeds(searched, filters);
-        return sortSeeds(filtered, sortBy);
-    }, [seedsWithSupplierNames, searchText, filters, sortBy]);
 
     const {pageItems, totalPages, currentPage} = useMemo(
-        () => paginateSeeds(processedSeeds, page),
-        [processedSeeds, page]
+        () => paginateSeeds(seedsWithSupplierNames, page),
+        [seedsWithSupplierNames, page]
     );
 
     const selectedSeed = selectedSeedId
@@ -115,32 +114,124 @@ export const SeedListPage = () => {
         : null;
     const selectedLots = selectedSeed ? lotsBySeed.get(String(selectedSeed.seedId)) || [] : [];
 
-    function setFilter(field, value) {
-        setFilters((prev) => ({...prev, [field]: value}));
+    const hasAppliedFilter = appliedFilter.mode !== '';
+
+    function applyFilter(next) {
+        setAppliedFilter(next);
         setPage(1);
+        setFilterError('');
     }
 
-    function handleFilterChange(field) {
-        return (e) => setFilter(field, e.target.value);
+    function handleModeChange(e) {
+        setDraftMode(e.target.value);
+        setDraftValue('');
+        setFilterError('');
+        if (hasAppliedFilter) applyFilter(SEED_FILTER_INITIAL_STATE);
     }
 
-    function handleSearchChange(e) {
-        setSearchText(e.target.value);
-        setPage(1);
+    function handleSelectValueChange(e) {
+        const value = e.target.value;
+        setDraftValue(value);
+        applyFilter(value ? {mode: draftMode, value} : SEED_FILTER_INITIAL_STATE);
     }
 
-    function handleClearFilters() {
-        setFilters(SEED_FILTERS_INITIAL_STATE);
-        setSearchText('');
-        setPage(1);
+    function handleSubmit(e) {
+        e.preventDefault();
+        const value = draftValue.trim();
+
+        if (draftMode === 'stock') {
+            if (value === '' || Number.isNaN(Number(value)) || Number(value) < 0) {
+                setFilterError('Ingresa un número válido (0 o mayor).');
+                return;
+            }
+        }
+        if (draftMode === 'name' && value === '') {
+            setFilterError('Ingresa el nombre exacto de la semilla.');
+            return;
+        }
+        if (!draftMode) return;
+
+        applyFilter({mode: draftMode, value});
+    }
+
+    function handleClearFilter() {
+        setDraftMode('');
+        setDraftValue('');
+        applyFilter(SEED_FILTER_INITIAL_STATE);
     }
 
     function handleSeeLots(seedId) {
         navigate('/lots', {state: {seedId: String(seedId)}});
     }
 
-    const hasActiveFilters =
-        searchText.trim() !== '' || Object.values(filters).some((value) => value !== '');
+    function renderValueControl() {
+        switch (draftMode) {
+            case 'type':
+                return (
+                    <select
+                        className="seed-select"
+                        aria-label="Tipo"
+                        value={draftValue}
+                        onChange={handleSelectValueChange}
+                    >
+                        <option value="">Selecciona un tipo</option>
+                        {SEED_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                );
+            case 'supplier':
+                return (
+                    <select
+                        className="seed-select"
+                        aria-label="Proveedor"
+                        value={draftValue}
+                        onChange={handleSelectValueChange}
+                    >
+                        <option value="">Selecciona un proveedor</option>
+                        {suppliers.map((supplier) => (
+                            <option key={supplier.supplierId} value={supplier.supplierId}>
+                                {supplier.name}
+                            </option>
+                        ))}
+                    </select>
+                );
+            case 'stock':
+                return (
+                    <>
+                        <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            className="seed-search-input"
+                            placeholder="Ej: 50"
+                            aria-label="Stock menor a"
+                            value={draftValue}
+                            onChange={(e) => setDraftValue(e.target.value)}
+                        />
+                        <button type="submit" className="seed-btn">Aplicar</button>
+                    </>
+                );
+            case 'name':
+                return (
+                    <>
+                        <input
+                            type="search"
+                            className="seed-search-input"
+                            placeholder="Nombre exacto de la semilla"
+                            aria-label="Nombre exacto"
+                            value={draftValue}
+                            onChange={(e) => setDraftValue(e.target.value)}
+                        />
+                        <button type="submit" className="seed-btn">Aplicar</button>
+                    </>
+                );
+            default:
+                return null;
+        }
+    }
 
     if (isLoading) {
         return <div className="seed-list-loading">Cargando catálogo de semillas...</div>;
@@ -150,7 +241,7 @@ export const SeedListPage = () => {
         return <div className="seed-list-message error">{loadError}</div>;
     }
 
-    if (seeds.length === 0) {
+    if (!isFetchingSeeds && !seedsError && !hasAppliedFilter && seeds.length === 0) {
         return (
             <div className="seed-list-empty">
                 <p>No existen semillas registradas en el catálogo.</p>
@@ -172,76 +263,41 @@ export const SeedListPage = () => {
                 </Link>
             </div>
 
-            <div className="seed-list-toolbar">
-                <input
-                    type="search"
-                    className="seed-search-input"
-                    placeholder="Buscar por nombre, descripción o proveedor"
-                    aria-label="Buscar semillas"
-                    value={searchText}
-                    onChange={handleSearchChange}
-                />
-
+            <form className="seed-list-toolbar" onSubmit={handleSubmit}>
                 <select
                     className="seed-select"
-                    aria-label="Tipo"
-                    value={filters.type}
-                    onChange={handleFilterChange('type')}
+                    aria-label="Filtrar por"
+                    value={draftMode}
+                    onChange={handleModeChange}
                 >
-                    <option value="">Todos los tipos</option>
-                    {SEED_TYPE_OPTIONS.map((option) => (
+                    {SEED_FILTER_MODES.map((option) => (
                         <option key={option.value} value={option.value}>
                             {option.label}
                         </option>
                     ))}
                 </select>
 
-                <select
-                    className="seed-select"
-                    aria-label="Ordenar"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                >
-                    {SORT_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
-            </div>
+                {renderValueControl()}
 
-            <div className="seed-chips" role="group" aria-label="Estado">
-                <button
-                    type="button"
-                    className={`seed-chip ${filters.active === '' ? 'on' : ''}`}
-                    onClick={() => setFilter('active', '')}
-                >
-                    Todas
-                </button>
-                <button
-                    type="button"
-                    className={`seed-chip ${filters.active === 'true' ? 'on' : ''}`}
-                    onClick={() => setFilter('active', 'true')}
-                >
-                    Activas
-                </button>
-                <button
-                    type="button"
-                    className={`seed-chip red ${filters.active === 'false' ? 'on' : ''}`}
-                    onClick={() => setFilter('active', 'false')}
-                >
-                    Desactivadas
-                </button>
-            </div>
+                {(hasAppliedFilter || draftMode !== '') && (
+                    <button type="button" className="seed-btn ghost" onClick={handleClearFilter}>
+                        Limpiar filtro
+                    </button>
+                )}
+            </form>
 
-            {processedSeeds.length === 0 ? (
+            {filterError && <div className="seed-list-message error">{filterError}</div>}
+
+            {isFetchingSeeds ? (
+                <div className="seed-list-loading">Cargando semillas...</div>
+            ) : seedsError ? (
+                <div className="seed-list-message error">{seedsError}</div>
+            ) : seeds.length === 0 ? (
                 <div className="seed-list-message">
-                    No hay semillas con esos criterios.
-                    {hasActiveFilters && (
-                        <button type="button" className="seed-link" onClick={handleClearFilters}>
-                            Limpiar filtros
-                        </button>
-                    )}
+                    No hay semillas con ese filtro.
+                    <button type="button" className="seed-link" onClick={handleClearFilter}>
+                        Limpiar filtro
+                    </button>
                 </div>
             ) : (
                 <>
@@ -272,7 +328,7 @@ export const SeedListPage = () => {
                             Anterior
                         </button>
                         <span>
-                            Mostrando {processedSeeds.length} de {seeds.length} · Página {currentPage} de{' '}
+                            {seeds.length} {seeds.length === 1 ? 'semilla' : 'semillas'} · Página {currentPage} de{' '}
                             {totalPages}
                         </span>
                         <button

@@ -1,67 +1,80 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { createLot, getLotById, updateLot } from '../lotApi.js';
-import { getAllSeeds } from '../../seeds/seedApi.js';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { createLot } from '../lotApi.js';
+import { getAllSeeds, getActiveSupplierIdsBySeed } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
+import { getSuppliers } from '../../suppliers/supplierApi.js';
+import { getApiErrorMessage } from '../../../api/apiError.js';
 import {
     LOT_FIELD_LABELS,
     LOT_FORM_INITIAL_VALUES,
-    getLotStatusLabel,
+    LOT_REQUIRED_FIELDS,
     validateLotForm,
 } from '../lotValidation.js';
 import './LotForm.css';
 
+const isRequired = (field) => LOT_REQUIRED_FIELDS.includes(field);
+const labelFor = (field) => `${LOT_FIELD_LABELS[field]}${isRequired(field) ? ' *' : ' (opcional)'}`;
+
 function LotFormPage() {
-    const { id } = useParams();
-    const isEditing = Boolean(id);
     const navigate = useNavigate();
 
     const [values, setValues] = useState(LOT_FORM_INITIAL_VALUES);
-    const [readOnlyInfo, setReadOnlyInfo] = useState(null);
     const [errors, setErrors] = useState({});
     const [seeds, setSeeds] = useState([]);
+    const [suppliers, setSuppliers] = useState([]);
     const [locations, setLocations] = useState([]);
-    const [isLoading, setIsLoading] = useState(isEditing);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState(null);
+
+    // null = aún no se han cargado los proveedores de la semilla elegida.
+    const [linkedSupplierIds, setLinkedSupplierIds] = useState([]);
+    const [linksError, setLinksError] = useState(null);
+    const currentSeedRef = useRef('');
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState(null);
 
     useEffect(() => {
-        getAllSeeds().then(setSeeds).catch(() => setSeeds([]));
-        getLocations().then(setLocations).catch(() => setLocations([]));
-    }, []);
-
-    useEffect(() => {
-        if (!isEditing) return;
-
-        getLotById(id)
-            .then((lot) => {
-                setValues({
-                    seedId: lot.seedId ? String(lot.seedId) : '',
-                    locationId: lot.locationId ? String(lot.locationId) : '',
-                    lotNumber: lot.lotNumber != null ? String(lot.lotNumber) : '',
-                    entryDate: lot.entryDate || '',
-                    dueDate: lot.dueDate || '',
-                    initialQuantity: lot.initialQuantity != null ? String(lot.initialQuantity) : '',
-                });
-                setReadOnlyInfo({
-                    availableQuantity: lot.availableQuantity,
-                    status: lot.status,
-                });
+        Promise.all([getAllSeeds(), getSuppliers(), getLocations()])
+            .then(([seedsData, suppliersData, locationsData]) => {
+                setSeeds(seedsData);
+                setSuppliers(suppliersData);
+                setLocations(locationsData);
             })
-            .catch(() => {
-                setSubmitMessage({
-                    type: 'error',
-                    text: 'No se pudo cargar el lote solicitado.',
-                });
-            })
+            .catch(() => setLoadError('No se pudo cargar la información para registrar lotes.'))
             .finally(() => setIsLoading(false));
-    }, [id, isEditing]);
+    }, []);
 
     function handleChange(field) {
         return (e) => {
             setValues((prev) => ({ ...prev, [field]: e.target.value }));
             setErrors((prev) => ({ ...prev, [field]: undefined }));
         };
+    }
+
+    function handleSeedChange(e) {
+        const seedId = e.target.value;
+        currentSeedRef.current = seedId;
+        setValues((prev) => ({ ...prev, seedId, supplierId: '' }));
+        setErrors((prev) => ({ ...prev, seedId: undefined, supplierId: undefined }));
+        setLinksError(null);
+
+        if (!seedId) {
+            setLinkedSupplierIds([]);
+            return;
+        }
+
+        setLinkedSupplierIds(null);
+        getActiveSupplierIdsBySeed(seedId)
+            .then((ids) => {
+                if (currentSeedRef.current === seedId) setLinkedSupplierIds(ids.map(String));
+            })
+            .catch(() => {
+                if (currentSeedRef.current !== seedId) return;
+                setLinkedSupplierIds([]);
+                setLinksError('No se pudieron cargar los proveedores de esta semilla.');
+            });
     }
 
     async function handleSubmit(e) {
@@ -84,20 +97,18 @@ function LotFormPage() {
 
         setIsSubmitting(true);
         try {
-            if (isEditing) {
-                await updateLot(id, values);
-                setSubmitMessage({ type: 'success', text: 'Lote modificado exitosamente.' });
-            } else {
-                await createLot(values);
-                setSubmitMessage({ type: 'success', text: 'Lote registrado exitosamente.' });
-                setValues(LOT_FORM_INITIAL_VALUES);
-            }
+            const lot = await createLot(values);
+            setSubmitMessage({
+                type: 'success',
+                text: `Lote ${lot.lotNumber} registrado exitosamente.`,
+            });
+            currentSeedRef.current = '';
+            setValues(LOT_FORM_INITIAL_VALUES);
+            setLinkedSupplierIds([]);
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
-                text:
-                    err.response?.data?.message ||
-                    'No se pudo guardar el lote. Intenta nuevamente.',
+                text: getApiErrorMessage(err, 'No se pudo registrar el lote. Intenta nuevamente.'),
             });
         } finally {
             setIsSubmitting(false);
@@ -108,28 +119,34 @@ function LotFormPage() {
         return <div className="lot-form-loading">Cargando información del lote...</div>;
     }
 
-    const seedOptions = seeds.filter((s) => s.active || String(s.seedId) === values.seedId);
-    const locationOptions = locations.filter(
-        (l) => l.active || String(l.locationId) === values.locationId
-    );
+    if (loadError) {
+        return (
+            <div className="lot-form-page">
+                <div className="lot-form-message error">{loadError}</div>
+            </div>
+        );
+    }
+
+    const supplierOptions = linkedSupplierIds
+        ? suppliers.filter((s) => linkedSupplierIds.includes(String(s.supplierId)))
+        : [];
+    const seedHasNoSuppliers = values.seedId && linkedSupplierIds?.length === 0 && !linksError;
 
     return (
         <div className="lot-form-page">
             <div className="lot-form-card">
-                <h2>{isEditing ? 'Modificar lote' : 'Registrar lote'}</h2>
+                <h2>Registrar lote</h2>
                 <p className="lot-form-subtitle">
-                    {isEditing
-                        ? 'Actualiza la información de este lote de semillas.'
-                        : 'Registra un lote de una semilla del catálogo.'}
+                    Registra la entrada de un lote de semillas al inventario.
                 </p>
 
                 <form onSubmit={handleSubmit} className="lot-form" noValidate>
                     <div className="lot-form-row">
                         <label className="lot-field">
-                            <span>Semilla *</span>
-                            <select value={values.seedId} onChange={handleChange('seedId')}>
+                            <span>{labelFor('seedId')}</span>
+                            <select value={values.seedId} onChange={handleSeedChange}>
                                 <option value="">Selecciona una semilla</option>
-                                {seedOptions.map((seed) => (
+                                {seeds.map((seed) => (
                                     <option key={seed.seedId} value={seed.seedId}>
                                         {seed.name}
                                     </option>
@@ -139,10 +156,44 @@ function LotFormPage() {
                         </label>
 
                         <label className="lot-field">
-                            <span>Ubicación *</span>
+                            <span>{labelFor('supplierId')}</span>
+                            <select
+                                value={values.supplierId}
+                                onChange={handleChange('supplierId')}
+                                disabled={!values.seedId || linkedSupplierIds === null}
+                            >
+                                <option value="">
+                                    {!values.seedId
+                                        ? 'Primero selecciona una semilla'
+                                        : linkedSupplierIds === null
+                                            ? 'Cargando proveedores...'
+                                            : 'Selecciona un proveedor'}
+                                </option>
+                                {supplierOptions.map((supplier) => (
+                                    <option key={supplier.supplierId} value={supplier.supplierId}>
+                                        {supplier.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.supplierId && (
+                                <small className="field-error">{errors.supplierId}</small>
+                            )}
+                            {linksError && <small className="field-error">{linksError}</small>}
+                            {seedHasNoSuppliers && (
+                                <small className="field-error">
+                                    Esta semilla no tiene proveedores vinculados.{' '}
+                                    <Link to={`/seeds/${values.seedId}/edit`}>Vincular proveedores</Link>
+                                </small>
+                            )}
+                        </label>
+                    </div>
+
+                    <div className="lot-form-row">
+                        <label className="lot-field">
+                            <span>{labelFor('locationId')}</span>
                             <select value={values.locationId} onChange={handleChange('locationId')}>
                                 <option value="">Selecciona una ubicación</option>
-                                {locationOptions.map((location) => (
+                                {locations.map((location) => (
                                     <option key={location.locationId} value={location.locationId}>
                                         {location.locationName}
                                     </option>
@@ -152,11 +203,9 @@ function LotFormPage() {
                                 <small className="field-error">{errors.locationId}</small>
                             )}
                         </label>
-                    </div>
 
-                    <div className="lot-form-row">
                         <label className="lot-field">
-                            <span>Número de lote *</span>
+                            <span>{labelFor('lotNumber')}</span>
                             <input
                                 type="number"
                                 min="1"
@@ -169,38 +218,38 @@ function LotFormPage() {
                                 <small className="field-error">{errors.lotNumber}</small>
                             )}
                         </label>
-
-                        <label className="lot-field">
-                            <span>Cantidad inicial *</span>
-                            <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                value={values.initialQuantity}
-                                onChange={handleChange('initialQuantity')}
-                                placeholder="Ej. 100"
-                            />
-                            {errors.initialQuantity && (
-                                <small className="field-error">{errors.initialQuantity}</small>
-                            )}
-                        </label>
                     </div>
+
+                    <label className="lot-field">
+                        <span>{labelFor('quantity')}</span>
+                        <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={values.quantity}
+                            onChange={handleChange('quantity')}
+                            placeholder="Ej. 100"
+                        />
+                        {errors.quantity && <small className="field-error">{errors.quantity}</small>}
+                    </label>
 
                     <div className="lot-form-row">
                         <label className="lot-field">
-                            <span>Fecha de ingreso *</span>
+                            <span>{labelFor('entryDate')}</span>
                             <input
                                 type="date"
                                 value={values.entryDate}
                                 onChange={handleChange('entryDate')}
                             />
-                            {errors.entryDate && (
+                            {errors.entryDate ? (
                                 <small className="field-error">{errors.entryDate}</small>
+                            ) : (
+                                <small>Si la dejas vacía se registra con la fecha de hoy.</small>
                             )}
                         </label>
 
                         <label className="lot-field">
-                            <span>Fecha de vencimiento *</span>
+                            <span>{labelFor('dueDate')}</span>
                             <input
                                 type="date"
                                 value={values.dueDate}
@@ -209,21 +258,6 @@ function LotFormPage() {
                             {errors.dueDate && <small className="field-error">{errors.dueDate}</small>}
                         </label>
                     </div>
-
-                    {isEditing && readOnlyInfo && (
-                        <div className="lot-form-row">
-                            <div className="lot-field">
-                                <span>Cantidad disponible</span>
-                                <div className="lot-field-readonly">{readOnlyInfo.availableQuantity}</div>
-                            </div>
-                            <div className="lot-field">
-                                <span>Estado</span>
-                                <div className="lot-field-readonly">
-                                    {getLotStatusLabel(readOnlyInfo.status)}
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     {submitMessage && (
                         <div className={`lot-form-message ${submitMessage.type}`}>
@@ -240,11 +274,7 @@ function LotFormPage() {
                             Cancelar
                         </button>
                         <button type="submit" className="seed-button primary" disabled={isSubmitting}>
-                            {isSubmitting
-                                ? 'Guardando...'
-                                : isEditing
-                                    ? 'Guardar cambios'
-                                    : 'Registrar'}
+                            {isSubmitting ? 'Guardando...' : 'Registrar'}
                         </button>
                     </div>
                 </form>

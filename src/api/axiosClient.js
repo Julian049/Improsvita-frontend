@@ -29,7 +29,16 @@ function redirectToLogin() {
     }
 }
 
+function isAuthRequest(config) {
+    return config?.url?.includes('/auth/login') || config?.url?.includes('/auth/register');
+}
+
 axiosClient.interceptors.request.use((config) => {
+    if (isAuthRequest(config)) {
+        delete config.headers.Authorization;
+        return config;
+    }
+
     const token = getToken();
 
     if (token && isTokenExpired(token)) {
@@ -46,6 +55,9 @@ axiosClient.interceptors.request.use((config) => {
 axiosClient.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Un login o registro fallido también responde 403: lo maneja el formulario, no es sesión caída.
+        if (isAuthRequest(error.config)) return Promise.reject(error);
+
         if (error.response?.status === 401 || error.response?.status === 403) {
             redirectToLogin();
         }

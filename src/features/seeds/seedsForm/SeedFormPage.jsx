@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createSeed, getSeedById, updateSeed } from '../seedApi.js';
 import { getSuppliers } from '../../suppliers/supplierApi.js';
+import { getApiErrorMessage } from '../../../api/apiError.js';
 import {
     FIELD_LABELS,
     SEED_FORM_INITIAL_VALUES,
@@ -18,6 +19,7 @@ function SeedFormPage() {
     const [values, setValues] = useState(SEED_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
     const [suppliers, setSuppliers] = useState([]);
+    const [blockedSupplierIds, setBlockedSupplierIds] = useState([]);
     const [isLoading, setIsLoading] = useState(isEditing);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState(null);
@@ -38,8 +40,8 @@ function SeedFormPage() {
                     type: seed.type || '',
                     description: seed.description || '',
                     supplierIds: seed.supplierIds.map(String),
-                    active: seed.active,
                 });
+                setBlockedSupplierIds(seed.blockedSupplierIds.map(String));
             })
             .catch(() => {
                 setSubmitMessage({
@@ -91,13 +93,13 @@ function SeedFormPage() {
             type: values.type,
             description: values.description.trim(),
             supplierIds: values.supplierIds,
-            ...(isEditing && { active: values.active }),
         };
 
         setIsSubmitting(true);
         try {
             if (isEditing) {
-                await updateSeed(id, payload);
+                const updated = await updateSeed(id, payload);
+                setBlockedSupplierIds(updated.blockedSupplierIds.map(String));
                 setSubmitMessage({ type: 'success', text: 'Semilla modificada exitosamente.' });
             } else {
                 await createSeed(payload);
@@ -107,9 +109,7 @@ function SeedFormPage() {
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
-                text:
-                    err.response?.data?.message ||
-                    'No se pudo guardar la semilla. Intenta nuevamente.',
+                text: getApiErrorMessage(err, 'No se pudo guardar la semilla. Intenta nuevamente.'),
             });
         } finally {
             setIsSubmitting(false);
@@ -172,37 +172,31 @@ function SeedFormPage() {
                     </label>
 
                     <div className="seed-field">
-                        <span>Proveedores *</span>
+                        <span>Proveedores (opcional)</span>
                         <div className="seed-checkbox-group">
                             {suppliers.length === 0 && <small>No hay proveedores disponibles.</small>}
-                            {suppliers.map((supplier) => (
-                                <label key={supplier.supplierId} className="seed-checkbox-option">
-                                    <input
-                                        type="checkbox"
-                                        checked={values.supplierIds.includes(String(supplier.supplierId))}
-                                        onChange={() => handleSupplierToggle(supplier.supplierId)}
-                                    />
-                                    {supplier.name}
-                                </label>
-                            ))}
+                            {suppliers.map((supplier) => {
+                                const key = String(supplier.supplierId);
+                                const isBlocked = blockedSupplierIds.includes(key);
+                                return (
+                                    <label key={key} className="seed-checkbox-option">
+                                        <input
+                                            type="checkbox"
+                                            checked={values.supplierIds.includes(key)}
+                                            disabled={isBlocked}
+                                            onChange={() => handleSupplierToggle(supplier.supplierId)}
+                                        />
+                                        {supplier.name}
+                                        {isBlocked && ' (desvinculado, no se puede volver a vincular)'}
+                                    </label>
+                                );
+                            })}
                         </div>
+                        <small>Solo los proveedores vinculados podrán registrar lotes de esta semilla.</small>
                         {errors.supplierIds && (
                             <small className="field-error">{errors.supplierIds}</small>
                         )}
                     </div>
-
-                    {isEditing && (
-                        <label className="seed-checkbox-option">
-                            <input
-                                type="checkbox"
-                                checked={values.active}
-                                onChange={(e) =>
-                                    setValues((prev) => ({ ...prev, active: e.target.checked }))
-                                }
-                            />
-                            Semilla activa
-                        </label>
-                    )}
 
                     {submitMessage && (
                         <div className={`seed-form-message ${submitMessage.type}`}>
