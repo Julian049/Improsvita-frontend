@@ -9,7 +9,12 @@ export const LOT_FIELD_LABELS = {
     initialQuantity: 'Cantidad inicial',
 };
 
-export const LOT_STATUS_LABELS = {};
+export const LOT_STATUS_LABELS = {
+    AVAILABLE: 'Disponible',
+    DEPLETED: 'Agotado',
+    EXPIRED: 'Vencido',
+    DISCARDED: 'Descartado',
+};
 
 export function getLotStatusLabel(status) {
     return LOT_STATUS_LABELS[status] || status || '—';

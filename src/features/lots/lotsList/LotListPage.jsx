@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { getAllLots } from '../lotApi.js';
+import { getAllLots, getLotKardex } from '../lotApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
+import { getSuppliers } from '../../suppliers/supplierApi.js';
 import { getLotStatusLabel } from '../lotValidation.js';
 import { formatDate } from '../../../utils/dateUtils.js';
 import { getExpirationStatus } from '../../../utils/expirationStatus.js';
@@ -46,25 +47,48 @@ function DueDate({ lot, variant, expiration }) {
     return <span>{formatDate(lot.dueDate)}</span>;
 }
 
-function getLotMovements(lot) {
-    if (Array.isArray(lot.movements) && lot.movements.length > 0) {
-        return lot.movements.map((m) => ({
-            date: m.date,
-            isEntry: String(m.type).toUpperCase().startsWith('ENTRY') || String(m.type).toLowerCase() === 'entrada',
-            quantity: m.quantity,
-            reason: m.reason,
-            supplier: m.supplierName,
-        }));
-    }
-    return [
-        {
-            date: lot.entryDate,
-            isEntry: true,
-            quantity: lot.initialQuantity,
-            reason: 'Compra del lote',
-            supplier: lot.supplierName,
-        },
-    ];
+const MOVEMENT_TYPE_LABELS = {
+    ENTRY: 'Entrada',
+    EXIT: 'Salida',
+    ADJUSTMENT: 'Ajuste',
+};
+
+// Las salidas llegan en positivo; los ajustes traen su propio signo.
+function getSignedQuantity(movement) {
+    return movement.movementType === 'EXIT' ? -movement.quantity : movement.quantity;
+}
+
+function useLotMovements(lotId) {
+    const [state, setState] = useState({ movements: [], isLoading: true, error: null });
+
+    useEffect(() => {
+        let cancelled = false;
+
+        Promise.all([getLotKardex(lotId), getSuppliers()])
+            .then(([movements, suppliers]) => {
+                if (cancelled) return;
+                const supplierNameById = new Map(suppliers.map((s) => [String(s.supplierId), s.name]));
+                setState({
+                    movements: movements.map((m) => ({
+                        ...m,
+                        supplierName: m.supplierId ? supplierNameById.get(String(m.supplierId)) || '' : '',
+                    })),
+                    isLoading: false,
+                    error: null,
+                });
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setState({ movements: [], isLoading: false, error: 'No se pudieron cargar los movimientos.' });
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [lotId]);
+
+    return state;
 }
 
 function LotDetail({ lot, onBack, onSeeSeedLots }) {
@@ -73,7 +97,7 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
     const available = Number(lot.availableQuantity) || 0;
     const used = Math.max(initial - available, 0);
     const ratio = initial > 0 ? Math.min(available / initial, 1) : 0;
-    const movements = getLotMovements(lot);
+    const { movements, isLoading: movementsLoading, error: movementsError } = useLotMovements(lot.lotId);
 
     return (
         <>
@@ -149,18 +173,36 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {movements.map((m, index) => (
-                                    <tr key={index} className="static">
-                                        <td>{formatDate(m.date)}</td>
-                                        <td>{m.isEntry ? 'Entrada' : 'Salida'}</td>
-                                        <td className={m.isEntry ? 'lot-mv-in' : 'lot-mv-out'}>
-                                            {m.isEntry ? '+' : '−'}
-                                            {formatQty(m.quantity)}
-                                        </td>
-                                        <td>{m.reason || '—'}</td>
-                                        <td>{m.supplier || '—'}</td>
+                                {movementsLoading && (
+                                    <tr className="static">
+                                        <td colSpan={5}>Cargando movimientos...</td>
                                     </tr>
-                                ))}
+                                )}
+                                {movementsError && (
+                                    <tr className="static">
+                                        <td colSpan={5}>{movementsError}</td>
+                                    </tr>
+                                )}
+                                {!movementsLoading && !movementsError && movements.length === 0 && (
+                                    <tr className="static">
+                                        <td colSpan={5}>Este lote no tiene movimientos registrados.</td>
+                                    </tr>
+                                )}
+                                {movements.map((m) => {
+                                    const signed = getSignedQuantity(m);
+                                    return (
+                                        <tr key={m.movementId} className="static">
+                                            <td>{formatDate(m.movementDate)}</td>
+                                            <td>{MOVEMENT_TYPE_LABELS[m.movementType] || m.movementType}</td>
+                                            <td className={signed >= 0 ? 'lot-mv-in' : 'lot-mv-out'}>
+                                                {signed >= 0 ? '+' : '−'}
+                                                {formatQty(Math.abs(signed))}
+                                            </td>
+                                            <td>{m.reason || '—'}</td>
+                                            <td>{m.supplierName || '—'}</td>
+                                        </tr>
+                                    );
+                                })}
                                 </tbody>
                             </table>
                         </div>
@@ -315,6 +357,7 @@ function LotListPage() {
         return (
             <div className="lot-list-page" ref={topRef}>
                 <LotDetail
+                    key={selectedLot.lotId}
                     lot={selectedLot}
                     onBack={() => setSelectedLotId(null)}
                     onSeeSeedLots={handleSeeSeedLots}
