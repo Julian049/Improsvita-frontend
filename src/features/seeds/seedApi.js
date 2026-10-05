@@ -132,6 +132,17 @@ export async function getSeeds(filter = { mode: '', value: '' }) {
 
 export const getAllSeeds = () => getSeeds();
 
+// Solo GET /seeds (sin cruzar proveedores): para vistas que únicamente necesitan nombres.
+export async function getSeedCatalog() {
+    if (MOCK_CONFIG.seeds) {
+        await mockDelay();
+        return MOCK_SEEDS;
+    }
+
+    const { data } = await axiosClient.get('/seeds');
+    return data.map((seed) => fromSeedResponse(seed));
+}
+
 export async function getSeedById(id) {
     const [{ data: seed }, suppliers, { activeIds, blockedIds }] = await Promise.all([
         axiosClient.get(`/seeds/${id}`),

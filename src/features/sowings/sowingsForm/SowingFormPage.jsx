@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createSowing } from '../sowingApi.js';
+import { createSowing, getSowings } from '../sowingApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLots } from '../../lots/lotApi.js';
 import { getBeds } from '../../beds/bedApi.js';
@@ -15,7 +15,7 @@ import {
     SOWING_REQUIRED_FIELDS,
     validateSowingForm,
 } from '../sowingValidation.js';
-import { getTodayDateString, groupLotsBySeed } from '../sowingUtils.js';
+import { getBedUsage, getTodayDateString, groupLotsBySeed } from '../sowingUtils.js';
 import { SEED_TYPE_OPTIONS } from '../../seeds/seedValidation.js';
 import './SowingForm.css';
 
@@ -60,6 +60,12 @@ function SowingFormPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState(null);
 
+    // Siembras de la cama elegida, para calcular su espacio libre.
+    const [bedSowings, setBedSowings] = useState([]);
+    const [isLoadingBed, setIsLoadingBed] = useState(false);
+    const [bedError, setBedError] = useState(null);
+    const currentBedRef = useRef('');
+
     useEffect(() => {
         let isActive = true;
 
@@ -91,9 +97,17 @@ function SowingFormPage() {
             .find((lot) => String(lot.lotId) === String(values.lotId)) ?? null;
     const availableStock = selectedLot ? Number(selectedLot.availableQuantity) : null;
 
+    const selectedBed = beds.find((bed) => String(bed.bedId) === String(values.bedId)) ?? null;
+    const bedUsage =
+        selectedBed && !isLoadingBed && !bedError ? getBedUsage(selectedBed, bedSowings) : null;
+    const bedFree = bedUsage?.free ?? null;
+    const maxQuantity = [availableStock, bedFree].filter((limit) => limit !== null);
+
     const today = getTodayDateString();
     const isRequired = (field) => SOWING_REQUIRED_FIELDS.includes(field);
     const canSubmit = lotGroups.length > 0 && hasActiveBed;
+    // Sin la ocupación de la cama no se puede validar la capacidad, así que no se deja enviar.
+    const isBedReady = !values.bedId || (!isLoadingBed && !bedError);
 
     function handleChange(field) {
         return (e) => {
@@ -108,6 +122,48 @@ function SowingFormPage() {
         };
     }
 
+    function resetBed() {
+        currentBedRef.current = '';
+        setBedSowings([]);
+        setIsLoadingBed(false);
+        setBedError(null);
+    }
+
+    function handleBedChange(e) {
+        const bedId = e.target.value;
+        currentBedRef.current = bedId;
+        setValues((prev) => ({ ...prev, bedId }));
+        setErrors((prev) => ({ ...prev, bedId: undefined, quantity: undefined }));
+        setBedError(null);
+
+        if (!bedId) {
+            resetBed();
+            return;
+        }
+
+        setIsLoadingBed(true);
+        getSowings({ mode: 'bedId', value: bedId })
+            .then((data) => {
+                if (currentBedRef.current === bedId) setBedSowings(data);
+            })
+            .catch(() => {
+                if (currentBedRef.current === bedId) {
+                    setBedError('No se pudo calcular el espacio libre de la cama.');
+                }
+            })
+            .finally(() => {
+                if (currentBedRef.current === bedId) setIsLoadingBed(false);
+            });
+    }
+
+    function getBedHint() {
+        if (!selectedBed) return undefined;
+        if (isLoadingBed) return 'Calculando espacio libre...';
+        if (!bedUsage) return undefined;
+        if (bedFree === null) return 'Cama sin capacidad máxima definida.';
+        return `Libre: ${formatQty(bedFree)} de ${formatQty(selectedBed.maxCapacity)}`;
+    }
+
     function refreshLots() {
         fetchAvailableLots()
             .then(setLots)
@@ -118,7 +174,7 @@ function SowingFormPage() {
         e.preventDefault();
         setSubmitMessage(null);
 
-        const validationErrors = validateSowingForm(values, availableStock);
+        const validationErrors = validateSowingForm(values, { availableStock, bedFree });
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
@@ -140,6 +196,7 @@ function SowingFormPage() {
                 text: `${SOWING_MESSAGES.success} Siembra n.° ${sowing.sowingId}: se descontaron ${formatQty(sowing.quantitySown)} semillas del lote ${selectedLot.lotNumber}.`,
             });
             setValues(SOWING_FORM_INITIAL_VALUES);
+            resetBed();
             refreshLots();
         } catch (err) {
             setSubmitMessage({
@@ -242,17 +299,23 @@ function SowingFormPage() {
                         )}
 
                         <div className="sowing-form-row">
-                            <Field label="Cama" required={isRequired('bedId')} error={errors.bedId}>
+                            <Field
+                                label="Cama"
+                                required={isRequired('bedId')}
+                                error={errors.bedId || bedError}
+                                hint={getBedHint()}
+                            >
                                 <select
                                     value={values.bedId}
-                                    onChange={handleChange('bedId')}
+                                    onChange={handleBedChange}
                                     aria-invalid={Boolean(errors.bedId)}
                                 >
                                     <option value="">Seleccione la cama</option>
                                     {beds.map((bed) => (
                                         // El backend rechaza sembrar en una cama inactiva.
                                         <option key={bed.bedId} value={bed.bedId} disabled={!bed.active}>
-                                            {bed.code} — capacidad {formatQty(bed.maxCapacity)}
+                                            {bed.code}
+                                            {bed.maxCapacity > 0 ? ` — capacidad ${formatQty(bed.maxCapacity)}` : ''}
                                             {bed.active ? '' : ' · inactiva'}
                                         </option>
                                     ))}
@@ -263,7 +326,11 @@ function SowingFormPage() {
                                 label="Cantidad"
                                 required={isRequired('quantity')}
                                 error={errors.quantity}
-                                hint={selectedLot ? `Máximo ${formatQty(availableStock)}` : undefined}
+                                hint={
+                                    maxQuantity.length > 0
+                                        ? `Máximo ${formatQty(Math.min(...maxQuantity))}`
+                                        : undefined
+                                }
                             >
                                 <input
                                     type="number"
@@ -343,7 +410,7 @@ function SowingFormPage() {
                             <button
                                 type="submit"
                                 className="seed-button primary"
-                                disabled={isSubmitting || !canSubmit}
+                                disabled={isSubmitting || !canSubmit || !isBedReady}
                             >
                                 {isSubmitting ? 'Registrando...' : 'Registrar'}
                             </button>

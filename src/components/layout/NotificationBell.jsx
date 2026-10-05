@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useExpirationAlerts } from '../../hooks/useExpirationAlerts';
 import { formatDate } from '../../utils/dateUtils';
+import { formatQty } from '../../utils/numberUtils';
 import './NotificationBell.css';
 
 const LEVEL_TAGS = {
@@ -39,7 +40,7 @@ function AlertItem({ lot, onNavigate }) {
                 </div>
                 <div className="notif-item-status">{label}</div>
                 <div className="notif-item-meta">
-                    Vence el {formatDate(lot.dueDate)} · Disponible: {lot.availableQuantity}
+                    Vence el {formatDate(lot.dueDate)} · Disponible: {formatQty(lot.availableQuantity)}
                 </div>
             </Link>
         </li>
