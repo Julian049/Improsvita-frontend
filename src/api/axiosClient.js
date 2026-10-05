@@ -30,6 +30,12 @@ function redirectToLogin() {
 }
 
 axiosClient.interceptors.request.use((config) => {
+    
+    if (config.url?.includes('/auth/login') || config.url?.includes('/auth/register')) {
+        delete config.headers.Authorization;
+        return config;
+    }
+
     const token = getToken();
 
     if (token && isTokenExpired(token)) {
