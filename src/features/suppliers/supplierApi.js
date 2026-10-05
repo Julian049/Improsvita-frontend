@@ -1,17 +1,13 @@
 import axiosClient from '../../api/axiosClient';
-import { toDateOnly } from '../../utils/dateUtils';
 import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
 import { MOCK_SUPPLIERS } from '../../mocks/supplierMocks';
 
 function fromSupplierResponse(supplier) {
     return {
-        supplierId: supplier.supplierId,
+        supplierId: supplier.id,
         name: supplier.name,
         phone: supplier.phone,
         email: supplier.email,
-        active: supplier.active,
-        createdDate: toDateOnly(supplier.createdDate),
-        lastUpdated: toDateOnly(supplier.lastUpdated),
     };
 }
 
@@ -31,6 +27,20 @@ export async function getSuppliers() {
 
     const { data } = await axiosClient.get('/suppliers');
     return data.map(fromSupplierResponse);
+}
+
+export async function getSeedCountsBySupplier(supplierIds) {
+    if (MOCK_CONFIG.suppliers) {
+        await mockDelay();
+        return new Map();
+    }
+
+    const entries = await Promise.all(
+        supplierIds.map((id) =>
+            axiosClient.get(`/seeds/supplier/${id}`).then(({ data }) => [String(id), data.length])
+        )
+    );
+    return new Map(entries);
 }
 
 export async function createSupplier(payload) {

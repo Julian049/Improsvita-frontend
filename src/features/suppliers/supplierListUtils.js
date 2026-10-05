@@ -1,11 +1,5 @@
 const STOP_WORDS = /^(de|del|y|la|los|el)$/i;
 
-export const SUPPLIER_STATUS_FILTERS = {
-    all: '',
-    active: 'active',
-    inactive: 'inactive',
-};
-
 export function searchSuppliers(suppliers, searchText) {
     const normalized = searchText.trim().toLowerCase();
     if (!normalized) return suppliers;
@@ -19,19 +13,8 @@ export function searchSuppliers(suppliers, searchText) {
     });
 }
 
-export function filterSuppliers(suppliers, status) {
-    if (status === SUPPLIER_STATUS_FILTERS.active) return suppliers.filter((s) => s.active);
-    if (status === SUPPLIER_STATUS_FILTERS.inactive) return suppliers.filter((s) => !s.active);
-    return suppliers;
-}
-
 export function sortSuppliers(suppliers) {
     return [...suppliers].sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
-}
-
-export function countSuppliersByStatus(suppliers) {
-    const active = suppliers.filter((supplier) => supplier.active).length;
-    return { all: suppliers.length, active, inactive: suppliers.length - active };
 }
 
 export function getSupplierLetter(name) {
@@ -47,17 +30,6 @@ export function groupSuppliersByLetter(suppliers) {
         groups.get(letter).push(supplier);
     });
     return [...groups.entries()];
-}
-
-export function countSeedsBySupplier(seeds) {
-    const counts = new Map();
-    seeds.forEach((seed) => {
-        (seed.supplierIds || []).forEach((id) => {
-            const key = String(id);
-            counts.set(key, (counts.get(key) || 0) + 1);
-        });
-    });
-    return counts;
 }
 
 export function getSupplierInitials(name) {

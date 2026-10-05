@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getSuppliers } from './supplierApi';
-import { getAllSeeds } from '../seeds/seedApi';
-import { formatDate } from '../../utils/dateUtils';
+import { getSeedCountsBySupplier, getSuppliers } from './supplierApi';
 import {
-    SUPPLIER_STATUS_FILTERS,
-    countSeedsBySupplier,
-    countSuppliersByStatus,
-    filterSuppliers,
     getSupplierHue,
     getSupplierInitials,
     groupSuppliersByLetter,
@@ -35,39 +29,45 @@ function MailIcon() {
 
 function SupplierListPage() {
     const [suppliers, setSuppliers] = useState([]);
-    const [seeds, setSeeds] = useState([]);
-    const [seedsLoaded, setSeedsLoaded] = useState(false);
+    const [seedCountBySupplier, setSeedCountBySupplier] = useState(new Map());
+    const [seedCountsLoaded, setSeedCountsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
 
     const [searchText, setSearchText] = useState('');
-    const [statusFilter, setStatusFilter] = useState(SUPPLIER_STATUS_FILTERS.all);
 
     useEffect(() => {
-        Promise.all([
-            getSuppliers(),
-            getAllSeeds().then(
-                (data) => ({ data, ok: true }),
-                () => ({ data: [], ok: false })
-            ),
-        ])
-            .then(([suppliersData, seedsResult]) => {
+        let cancelled = false;
+
+        getSuppliers()
+            .then((suppliersData) => {
+                if (cancelled) return;
                 setSuppliers(suppliersData);
-                setSeeds(seedsResult.data);
-                setSeedsLoaded(seedsResult.ok);
+
+                getSeedCountsBySupplier(suppliersData.map((s) => s.supplierId))
+                    .then((counts) => {
+                        if (cancelled) return;
+                        setSeedCountBySupplier(counts);
+                        setSeedCountsLoaded(true);
+                    })
+                    .catch(() => {});
             })
-            .catch(() => setLoadError('No se pudo cargar la lista de proveedores.'))
-            .finally(() => setIsLoading(false));
+            .catch(() => {
+                if (!cancelled) setLoadError('No se pudo cargar la lista de proveedores.');
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
-    const seedCountBySupplier = useMemo(() => countSeedsBySupplier(seeds), [seeds]);
-    const counts = useMemo(() => countSuppliersByStatus(suppliers), [suppliers]);
-
-    const processedSuppliers = useMemo(() => {
-        const searched = searchSuppliers(suppliers, searchText);
-        const filtered = filterSuppliers(searched, statusFilter);
-        return sortSuppliers(filtered);
-    }, [suppliers, searchText, statusFilter]);
+    const processedSuppliers = useMemo(
+        () => sortSuppliers(searchSuppliers(suppliers, searchText)),
+        [suppliers, searchText]
+    );
 
     const groups = useMemo(() => groupSuppliersByLetter(processedSuppliers), [processedSuppliers]);
 
@@ -107,29 +107,6 @@ function SupplierListPage() {
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
                         />
-                        <div className="supplier-chips" role="group" aria-label="Estado">
-                            <button
-                                type="button"
-                                className={`supplier-chip ${statusFilter === SUPPLIER_STATUS_FILTERS.all ? 'on' : ''}`}
-                                onClick={() => setStatusFilter(SUPPLIER_STATUS_FILTERS.all)}
-                            >
-                                Todos<em>{counts.all}</em>
-                            </button>
-                            <button
-                                type="button"
-                                className={`supplier-chip ${statusFilter === SUPPLIER_STATUS_FILTERS.active ? 'on' : ''}`}
-                                onClick={() => setStatusFilter(SUPPLIER_STATUS_FILTERS.active)}
-                            >
-                                Activos<em>{counts.active}</em>
-                            </button>
-                            <button
-                                type="button"
-                                className={`supplier-chip red ${statusFilter === SUPPLIER_STATUS_FILTERS.inactive ? 'on' : ''}`}
-                                onClick={() => setStatusFilter(SUPPLIER_STATUS_FILTERS.inactive)}
-                            >
-                                Desactivados<em>{counts.inactive}</em>
-                            </button>
-                        </div>
                     </div>
 
                     <div className="supplier-wrap">
@@ -143,10 +120,7 @@ function SupplierListPage() {
                                         {items.map((supplier) => {
                                             const seedCount = seedCountBySupplier.get(String(supplier.supplierId)) || 0;
                                             return (
-                                                <article
-                                                    key={supplier.supplierId}
-                                                    className={`supplier-card ${supplier.active ? '' : 'off'}`}
-                                                >
+                                                <article key={supplier.supplierId} className="supplier-card">
                                                     <div className="supplier-card-top">
                                                         <div
                                                             className="supplier-av"
@@ -156,9 +130,6 @@ function SupplierListPage() {
                                                         </div>
                                                         <div className="supplier-nm">
                                                             <h3 title={supplier.name}>{supplier.name}</h3>
-                                                            <span className="supplier-state">
-                                                                {supplier.active ? 'Activo' : 'Desactivado'}
-                                                            </span>
                                                         </div>
                                                     </div>
 
@@ -173,18 +144,14 @@ function SupplierListPage() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="supplier-foot">
-                                                        <div className="supplier-meta">
-                                                            Proveedor desde {formatDate(supplier.createdDate)}
-                                                            {seedsLoaded && (
-                                                                <>
-                                                                    <br />
-                                                                    Suministra {seedCount}{' '}
-                                                                    {seedCount === 1 ? 'semilla' : 'semillas'}
-                                                                </>
-                                                            )}
+                                                    {seedCountsLoaded && (
+                                                        <div className="supplier-foot">
+                                                            <div className="supplier-meta">
+                                                                Suministra {seedCount}{' '}
+                                                                {seedCount === 1 ? 'semilla' : 'semillas'}
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </article>
                                             );
                                         })}
