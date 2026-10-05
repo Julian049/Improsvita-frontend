@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatQty } from '../../../utils/numberUtils';
-import { formatDate } from '../../../utils/dateUtils';
 
-export const SeedCard = ({ seed, typeLabel, stock, lotCount, lotsLoaded, onSelect }) => {
+export const SeedCard = ({ seed, typeLabel, stock, lotCount, lotsLoaded, onSelect, onDelete }) => {
     function handleClick(e) {
         if (e.target.closest('a, button')) return;
         onSelect(seed.seedId);
@@ -50,11 +49,13 @@ export const SeedCard = ({ seed, typeLabel, stock, lotCount, lotsLoaded, onSelec
             </div>
 
             <div className="seed-foot">
-                <span>Creada {formatDate(seed.createdDate)}</span>
                 <div className="seed-acts">
                     <Link to={`/seeds/${seed.seedId}/edit`} className="seed-link">
                         Editar
                     </Link>
+                    <button type="button" className="seed-link danger" onClick={() => onDelete(seed)}>
+                        Eliminar
+                    </button>
                 </div>
             </div>
         </article>

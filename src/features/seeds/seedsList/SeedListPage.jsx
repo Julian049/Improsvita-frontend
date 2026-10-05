@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
-import {getSeeds} from '../seedApi.js';
+import {deleteSeed, getSeeds} from '../seedApi.js';
 import {getSuppliers} from '../../suppliers/supplierApi';
 import {getAllLots} from '../../lots/lotApi.js';
 import {SEED_TYPE_OPTIONS} from '../seedValidation.js';
@@ -11,6 +11,8 @@ import {
 } from './seedListUtils.js';
 import {SeedCard} from './SeedCard';
 import {SeedDetailModal} from './SeedDetailModal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog.jsx';
+import {getApiErrorMessage} from '../../../api/apiError.js';
 import './SeedList.css';
 
 const SEED_TYPE_LABELS = Object.fromEntries(
@@ -39,6 +41,10 @@ export const SeedListPage = () => {
 
     const [page, setPage] = useState(1);
     const [selectedSeedId, setSelectedSeedId] = useState(null);
+
+    const [seedToDelete, setSeedToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteMessage, setDeleteMessage] = useState(null);
 
     useEffect(() => {
         Promise.all([
@@ -158,6 +164,29 @@ export const SeedListPage = () => {
         setDraftMode('');
         setDraftValue('');
         applyFilter(SEED_FILTER_INITIAL_STATE);
+    }
+
+    function handleRequestDelete(seed) {
+        setDeleteMessage(null);
+        setSeedToDelete(seed);
+    }
+
+    async function handleConfirmDelete() {
+        const seed = seedToDelete;
+        setIsDeleting(true);
+        try {
+            await deleteSeed(seed.seedId);
+            setSeeds((prev) => prev.filter((s) => s.seedId !== seed.seedId));
+            setDeleteMessage({type: 'success', text: `Semilla "${seed.name}" eliminada.`});
+        } catch (err) {
+            setDeleteMessage({
+                type: 'error',
+                text: getApiErrorMessage(err, 'No se pudo eliminar la semilla. Intenta nuevamente.'),
+            });
+        } finally {
+            setIsDeleting(false);
+            setSeedToDelete(null);
+        }
     }
 
     function handleSeeLots(seedId) {
@@ -288,6 +317,12 @@ export const SeedListPage = () => {
 
             {filterError && <div className="seed-list-message error">{filterError}</div>}
 
+            {deleteMessage && (
+                <div className={`seed-list-message ${deleteMessage.type}`} role="status">
+                    {deleteMessage.text}
+                </div>
+            )}
+
             {isFetchingSeeds ? (
                 <div className="seed-list-loading">Cargando semillas...</div>
             ) : seedsError ? (
@@ -313,6 +348,7 @@ export const SeedListPage = () => {
                                     lotCount={seedLots.length}
                                     lotsLoaded={lotsLoaded}
                                     onSelect={setSelectedSeedId}
+                                    onDelete={handleRequestDelete}
                                 />
                             );
                         })}
@@ -352,6 +388,18 @@ export const SeedListPage = () => {
                 onSeeLots={handleSeeLots}
                 onClose={() => setSelectedSeedId(null)}
             />
+
+            {seedToDelete && (
+                <ConfirmDialog
+                    title="Eliminar semilla"
+                    message="¿Seguro que desea eliminar esta semilla? Se borrará definitivamente del catálogo."
+                    details={seedToDelete.name}
+                    confirmLabel="Eliminar"
+                    isConfirming={isDeleting}
+                    onConfirm={handleConfirmDelete}
+                    onCancel={() => setSeedToDelete(null)}
+                />
+            )}
         </div>
     );
 };
