@@ -3,7 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createPlanting } from '../plantingApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getAllLots } from '../../lots/lotApi.js';
+import { getBeds } from '../../beds/bedApi.js';
+import { getApiErrorMessage } from '../../../api/apiError.js';
 import { formatDate } from '../../../utils/dateUtils.js';
+import { formatQty } from '../../../utils/numberUtils.js';
 import {
     PLANTING_FIELD_LABELS,
     PLANTING_FORM_INITIAL_VALUES,
@@ -12,7 +15,7 @@ import {
     PLANTING_REQUIRED_FIELDS,
     validatePlantingForm,
 } from '../plantingValidation.js';
-import { getSeedStockList, getTodayDateString } from '../plantingUtils.js';
+import { getSowableLotGroups, getTodayDateString } from '../plantingUtils.js';
 import { SEED_TYPE_OPTIONS } from '../../seeds/seedValidation.js';
 import './PlantingForm.css';
 
@@ -21,7 +24,7 @@ const SEED_TYPE_LABELS = Object.fromEntries(
 );
 
 function fetchInventory() {
-    return Promise.all([getAllSeeds(), getAllLots()]);
+    return Promise.all([getAllSeeds(), getAllLots(), getBeds()]);
 }
 
 function Field({ label, required, error, hint, children }) {
@@ -49,6 +52,7 @@ function PlantingFormPage() {
     const [errors, setErrors] = useState({});
     const [seeds, setSeeds] = useState([]);
     const [lots, setLots] = useState([]);
+    const [beds, setBeds] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,13 +62,14 @@ function PlantingFormPage() {
         let isActive = true;
 
         fetchInventory()
-            .then(([seedsData, lotsData]) => {
+            .then(([seedsData, lotsData, bedsData]) => {
                 if (!isActive) return;
                 setSeeds(seedsData);
                 setLots(lotsData);
+                setBeds(bedsData);
             })
             .catch(() => {
-                if (isActive) setLoadError('No se pudo cargar el inventario de semillas.');
+                if (isActive) setLoadError('No se pudo cargar el inventario de lotes y camas.');
             })
             .finally(() => {
                 if (isActive) setIsLoading(false);
@@ -75,11 +80,18 @@ function PlantingFormPage() {
         };
     }, []);
 
-    const seedOptions = useMemo(() => getSeedStockList(seeds, lots), [seeds, lots]);
-    const selectedSeed =
-        seedOptions.find((seed) => String(seed.seedId) === String(values.seedId)) ?? null;
+    const lotGroups = useMemo(() => getSowableLotGroups(lots, seeds), [lots, seeds]);
+    const activeBeds = useMemo(() => beds.filter((bed) => bed.active), [beds]);
+
+    const selectedLot =
+        lotGroups
+            .flatMap((group) => group.lots)
+            .find((lot) => String(lot.lotId) === String(values.lotId)) ?? null;
+    const availableStock = selectedLot ? Number(selectedLot.availableQuantity) : null;
+
     const today = getTodayDateString();
     const isRequired = (field) => PLANTING_REQUIRED_FIELDS.includes(field);
+    const canSubmit = lotGroups.length > 0 && activeBeds.length > 0;
 
     function handleChange(field) {
         return (e) => {
@@ -88,27 +100,23 @@ function PlantingFormPage() {
             setErrors((prev) => ({
                 ...prev,
                 [field]: undefined,
-                ...(field === 'seedId' && { quantity: undefined }),
-                ...(field === 'plantingDate' && { harvestDate: undefined }),
+                ...(field === 'lotId' && { quantity: undefined }),
+                ...(field === 'sowingDate' && { expectedGerminationDate: undefined }),
             }));
         };
     }
 
-    function refreshInventory() {
-        fetchInventory()
-            .then(([seedsData, lotsData]) => {
-                setSeeds(seedsData);
-                setLots([...lotsData]);
-            })
-            .catch(() => {
-            });
+    function refreshLots() {
+        getAllLots()
+            .then(setLots)
+            .catch(() => {});
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
         setSubmitMessage(null);
 
-        const validationErrors = validatePlantingForm(values, selectedSeed?.availableStock ?? null);
+        const validationErrors = validatePlantingForm(values, availableStock);
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
@@ -127,14 +135,14 @@ function PlantingFormPage() {
             const planting = await createPlanting(values);
             setSubmitMessage({
                 type: 'success',
-                text: `${PLANTING_MESSAGES.success} Siembra n.° ${planting.plantingId}: se descontaron ${planting.discountedQuantity} semillas del inventario.`,
+                text: `${PLANTING_MESSAGES.success} Siembra n.° ${planting.plantingId}: se descontaron ${formatQty(planting.quantitySown)} semillas del lote ${selectedLot.lotNumber}.`,
             });
             setValues(PLANTING_FORM_INITIAL_VALUES);
-            refreshInventory();
+            refreshLots();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
-                text: err.response?.data?.message || PLANTING_MESSAGES.saveError,
+                text: getApiErrorMessage(err, PLANTING_MESSAGES.saveError),
             });
         } finally {
             setIsSubmitting(false);
@@ -142,7 +150,7 @@ function PlantingFormPage() {
     }
 
     if (isLoading) {
-        return <div className="planting-form-loading">Cargando inventario de semillas...</div>;
+        return <div className="planting-form-loading">Cargando inventario de lotes y camas...</div>;
     }
 
     if (loadError) {
@@ -168,13 +176,13 @@ function PlantingFormPage() {
                     <h2>Registrar siembra</h2>
                 </div>
                 <p className="planting-form-subtitle">
-                    Siembra semillas del inventario. La cantidad se descuenta automáticamente del stock.
+                    Siembra semillas de un lote en una cama. La cantidad se descuenta automáticamente del lote.
                 </p>
 
-                {seedOptions.length === 0 && !submitMessage && (
+                {lotGroups.length === 0 && !submitMessage && (
                     <div className="planting-form-empty">
                         <div className="planting-form-message error">
-                            No hay semillas con stock disponible para sembrar.
+                            No hay lotes con stock disponible para sembrar.
                         </div>
                         <Link to="/lots/new" className="seed-button primary">
                             Registrar lote
@@ -182,124 +190,130 @@ function PlantingFormPage() {
                     </div>
                 )}
 
-                {(seedOptions.length > 0 || submitMessage) && (
+                {lotGroups.length > 0 && activeBeds.length === 0 && (
+                    <div className="planting-form-message error">
+                        No hay camas activas registradas. Registra una cama para poder sembrar.
+                    </div>
+                )}
+
+                {(canSubmit || submitMessage) && (
                     <form onSubmit={handleSubmit} className="planting-form" noValidate>
-                        <Field
-                            label="Tipo de semilla"
-                            required={isRequired('seedId')}
-                            error={errors.seedId}
-                        >
+                        <Field label="Lote" required={isRequired('lotId')} error={errors.lotId}>
                             <select
-                                value={values.seedId}
-                                onChange={handleChange('seedId')}
-                                aria-invalid={Boolean(errors.seedId)}
+                                value={values.lotId}
+                                onChange={handleChange('lotId')}
+                                aria-invalid={Boolean(errors.lotId)}
                             >
-                                <option value="">Seleccione el tipo de plántula</option>
-                                {seedOptions.map((seed) => (
-                                    <option key={seed.seedId} value={seed.seedId}>
-                                        {seed.name} — {seed.availableStock} disponibles
-                                    </option>
+                                <option value="">Seleccione el lote a sembrar</option>
+                                {lotGroups.map((group) => (
+                                    <optgroup key={group.seed.seedId} label={group.seed.name}>
+                                        {group.lots.map((lot) => (
+                                            <option key={lot.lotId} value={lot.lotId}>
+                                                Lote {lot.lotNumber} — {formatQty(lot.availableQuantity)} disponibles
+                                            </option>
+                                        ))}
+                                    </optgroup>
                                 ))}
                             </select>
                         </Field>
 
-                        {selectedSeed && (
+                        {selectedLot && (
                             <dl className="planting-stock-info">
                                 <div>
-                                    <dt>Stock disponible</dt>
-                                    <dd>{selectedSeed.availableStock}</dd>
+                                    <dt>Semilla</dt>
+                                    <dd>{selectedLot.seedName}</dd>
                                 </div>
                                 <div>
                                     <dt>Tipo</dt>
-                                    <dd>{SEED_TYPE_LABELS[selectedSeed.type] || selectedSeed.type || '—'}</dd>
+                                    <dd>{SEED_TYPE_LABELS[selectedLot.seedType] || selectedLot.seedType || '—'}</dd>
                                 </div>
                                 <div>
-                                    <dt>Proveedor</dt>
-                                    <dd>{selectedSeed.supplierNames?.join(', ') || '—'}</dd>
+                                    <dt>Stock del lote</dt>
+                                    <dd>{formatQty(selectedLot.availableQuantity)}</dd>
                                 </div>
                                 <div>
-                                    <dt>Próximo vencimiento</dt>
-                                    <dd>{formatDate(selectedSeed.nextDueDate)}</dd>
+                                    <dt>Vencimiento</dt>
+                                    <dd>{formatDate(selectedLot.dueDate)}</dd>
                                 </div>
                             </dl>
                         )}
 
-                        <Field
-                            label="Cantidad"
-                            required={isRequired('quantity')}
-                            error={errors.quantity}
-                            hint={selectedSeed ? `Máximo ${selectedSeed.availableStock}` : undefined}
-                        >
-                            <input
-                                type="number"
-                                inputMode="numeric"
-                                min="1"
-                                step="1"
-                                value={values.quantity}
-                                onChange={handleChange('quantity')}
-                                placeholder="Ej. 500"
-                                aria-invalid={Boolean(errors.quantity)}
-                            />
-                        </Field>
+                        <div className="planting-form-row">
+                            <Field label="Cama" required={isRequired('bedId')} error={errors.bedId}>
+                                <select
+                                    value={values.bedId}
+                                    onChange={handleChange('bedId')}
+                                    aria-invalid={Boolean(errors.bedId)}
+                                >
+                                    <option value="">Seleccione la cama</option>
+                                    {activeBeds.map((bed) => (
+                                        <option key={bed.bedId} value={bed.bedId}>
+                                            {bed.code} — capacidad {formatQty(bed.maxCapacity)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Field>
+
+                            <Field
+                                label="Cantidad"
+                                required={isRequired('quantity')}
+                                error={errors.quantity}
+                                hint={selectedLot ? `Máximo ${formatQty(availableStock)}` : undefined}
+                            >
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="1"
+                                    step="1"
+                                    value={values.quantity}
+                                    onChange={handleChange('quantity')}
+                                    placeholder="Ej. 500"
+                                    aria-invalid={Boolean(errors.quantity)}
+                                />
+                            </Field>
+                        </div>
 
                         <div className="planting-form-row">
                             <Field
                                 label="Fecha de siembra"
-                                required={isRequired('plantingDate')}
-                                error={errors.plantingDate}
+                                required={isRequired('sowingDate')}
+                                error={errors.sowingDate}
                             >
                                 <input
                                     type="date"
                                     max={today}
-                                    value={values.plantingDate}
-                                    onChange={handleChange('plantingDate')}
-                                    aria-invalid={Boolean(errors.plantingDate)}
+                                    value={values.sowingDate}
+                                    onChange={handleChange('sowingDate')}
+                                    aria-invalid={Boolean(errors.sowingDate)}
                                 />
                             </Field>
 
                             <Field
-                                label="Fecha estimada de cosecha"
-                                required={isRequired('harvestDate')}
-                                error={errors.harvestDate}
+                                label="Germinación esperada"
+                                required={isRequired('expectedGerminationDate')}
+                                error={errors.expectedGerminationDate}
                             >
                                 <input
                                     type="date"
-                                    min={values.plantingDate || undefined}
-                                    value={values.harvestDate}
-                                    onChange={handleChange('harvestDate')}
-                                    aria-invalid={Boolean(errors.harvestDate)}
+                                    min={values.sowingDate || undefined}
+                                    value={values.expectedGerminationDate}
+                                    onChange={handleChange('expectedGerminationDate')}
+                                    aria-invalid={Boolean(errors.expectedGerminationDate)}
                                 />
                             </Field>
                         </div>
 
                         <Field
-                            label="Frecuencia de fumigación (días)"
-                            required={isRequired('fumigationFrequencyDays')}
-                            error={errors.fumigationFrequencyDays}
-                        >
-                            <input
-                                type="number"
-                                inputMode="numeric"
-                                min="1"
-                                step="1"
-                                value={values.fumigationFrequencyDays}
-                                onChange={handleChange('fumigationFrequencyDays')}
-                                placeholder="Ej. 15"
-                                aria-invalid={Boolean(errors.fumigationFrequencyDays)}
-                            />
-                        </Field>
-
-                        <Field
-                            label="Observaciones"
-                            required={isRequired('observations')}
-                            error={errors.observations}
-                            hint={`${values.observations.length}/${PLANTING_LIMITS.observationsMax}`}
+                            label="Notas"
+                            required={isRequired('notes')}
+                            error={errors.notes}
+                            hint={`${values.notes.length}/${PLANTING_LIMITS.notesMax}`}
                         >
                             <textarea
-                                maxLength={PLANTING_LIMITS.observationsMax}
-                                value={values.observations}
-                                onChange={handleChange('observations')}
-                                aria-invalid={Boolean(errors.observations)}
+                                maxLength={PLANTING_LIMITS.notesMax}
+                                value={values.notes}
+                                onChange={handleChange('notes')}
+                                aria-invalid={Boolean(errors.notes)}
                             />
                         </Field>
 
@@ -323,7 +337,7 @@ function PlantingFormPage() {
                             <button
                                 type="submit"
                                 className="seed-button primary"
-                                disabled={isSubmitting || seedOptions.length === 0}
+                                disabled={isSubmitting || !canSubmit}
                             >
                                 {isSubmitting ? 'Registrando...' : 'Registrar'}
                             </button>

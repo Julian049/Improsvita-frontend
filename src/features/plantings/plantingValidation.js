@@ -1,38 +1,36 @@
 import { toLocalDate } from '../../utils/dateUtils';
 
 export const PLANTING_FIELD_LABELS = {
-    seedId: 'Tipo de semilla',
+    lotId: 'Lote',
+    bedId: 'Cama',
     quantity: 'Cantidad',
-    plantingDate: 'Fecha de siembra',
-    harvestDate: 'Fecha estimada de cosecha',
-    fumigationFrequencyDays: 'Frecuencia de fumigación',
-    observations: 'Observaciones',
+    sowingDate: 'Fecha de siembra',
+    expectedGerminationDate: 'Germinación esperada',
+    notes: 'Notas',
 };
 
-export const PLANTING_REQUIRED_FIELDS = ['seedId', 'quantity', 'plantingDate', 'harvestDate'];
+export const PLANTING_REQUIRED_FIELDS = ['lotId', 'bedId', 'quantity', 'sowingDate'];
 
 export const PLANTING_LIMITS = {
     quantityDigits: 6,
-    fumigationDigits: 4,
-    observationsMax: 300,
+    notesMax: 300,
 };
 
 export const PLANTING_MESSAGES = {
     success: 'Siembra registrada exitosamente.',
-    requiredFields: 'Por favor diligencie todos los campos obligatorios.',
     invalidQuantity: 'La cantidad debe ser un número entero mayor que cero.',
-    exceedsStock: 'La cantidad solicitada supera el stock disponible.',
-    noStock: 'La semilla seleccionada no existe o no tiene stock disponible.',
+    exceedsStock: 'La cantidad solicitada supera el stock disponible del lote.',
+    noStock: 'El lote seleccionado no existe o no tiene stock disponible.',
     saveError: 'Error al registrar la siembra. Intente nuevamente o contacte al administrador.',
 };
 
 export const PLANTING_FORM_INITIAL_VALUES = {
-    seedId: '',
+    lotId: '',
+    bedId: '',
     quantity: '',
-    plantingDate: '',
-    harvestDate: '',
-    fumigationFrequencyDays: '',
-    observations: '',
+    sowingDate: '',
+    expectedGerminationDate: '',
+    notes: '',
 };
 
 function isEmpty(value) {
@@ -44,7 +42,6 @@ function isPositiveInteger(value, maxDigits) {
     return /^\d+$/.test(text) && Number(text) > 0 && text.length <= maxDigits;
 }
 
-
 export function validatePlantingForm(values, availableStock = null) {
     const errors = {};
 
@@ -52,8 +49,8 @@ export function validatePlantingForm(values, availableStock = null) {
         if (isEmpty(values[field])) errors[field] = 'Este campo es obligatorio.';
     });
 
-    if (!isEmpty(values.seedId) && availableStock === null) {
-        errors.seedId = PLANTING_MESSAGES.noStock;
+    if (!isEmpty(values.lotId) && availableStock === null) {
+        errors.lotId = PLANTING_MESSAGES.noStock;
     }
 
     if (!isEmpty(values.quantity)) {
@@ -64,30 +61,23 @@ export function validatePlantingForm(values, availableStock = null) {
         }
     }
 
-    if (!isEmpty(values.plantingDate)) {
+    if (!isEmpty(values.sowingDate)) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (toLocalDate(values.plantingDate) > today) {
-            errors.plantingDate = 'La fecha de siembra no puede ser mayor a la fecha actual.';
+        if (toLocalDate(values.sowingDate) > today) {
+            errors.sowingDate = 'La fecha de siembra no puede ser mayor a la fecha actual.';
         }
     }
 
-    if (!isEmpty(values.harvestDate) && !isEmpty(values.plantingDate)) {
-        if (toLocalDate(values.harvestDate) < toLocalDate(values.plantingDate)) {
-            errors.harvestDate =
-                'La fecha estimada de cosecha no puede ser menor a la fecha de siembra.';
+    if (!isEmpty(values.expectedGerminationDate) && !isEmpty(values.sowingDate)) {
+        if (toLocalDate(values.expectedGerminationDate) < toLocalDate(values.sowingDate)) {
+            errors.expectedGerminationDate =
+                'La germinación esperada no puede ser menor a la fecha de siembra.';
         }
     }
 
-    if (!isEmpty(values.fumigationFrequencyDays)) {
-        if (!isPositiveInteger(values.fumigationFrequencyDays, PLANTING_LIMITS.fumigationDigits)) {
-            errors.fumigationFrequencyDays =
-                'La frecuencia debe ser un número entero de días mayor que cero.';
-        }
-    }
-
-    if (!isEmpty(values.observations) && values.observations.length > PLANTING_LIMITS.observationsMax) {
-        errors.observations = `Máximo ${PLANTING_LIMITS.observationsMax} caracteres.`;
+    if (!isEmpty(values.notes) && values.notes.length > PLANTING_LIMITS.notesMax) {
+        errors.notes = `Máximo ${PLANTING_LIMITS.notesMax} caracteres.`;
     }
 
     return errors;

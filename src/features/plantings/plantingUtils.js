@@ -6,33 +6,26 @@ export function getTodayDateString(date = new Date()) {
     return `${date.getFullYear()}-${month}-${day}`;
 }
 
-export function getSeedStockList(seeds, lots, today = new Date()) {
-    const stockBySeed = new Map();
+export function getSowableLotGroups(lots, seeds, today = new Date()) {
+    const seedById = new Map(seeds.map((seed) => [String(seed.seedId), seed]));
+    const groups = new Map();
 
     lots.forEach((lot) => {
-        const quantity = Number(lot.availableQuantity);
-        if (!(quantity > 0)) return;
+        if (!(Number(lot.availableQuantity) > 0)) return;
         if (getExpirationStatus(lot.dueDate, today).level === 'expired') return;
 
-        const key = String(lot.seedId);
-        const current = stockBySeed.get(key) ?? { total: 0, nextDueDate: null };
-        current.total += quantity;
-        if (lot.dueDate && (!current.nextDueDate || lot.dueDate < current.nextDueDate)) {
-            current.nextDueDate = lot.dueDate;
-        }
-        stockBySeed.set(key, current);
+        const seed = seedById.get(String(lot.seedId));
+        if (!seed || !seed.active) return;
+
+        const key = String(seed.seedId);
+        if (!groups.has(key)) groups.set(key, { seed, lots: [] });
+        groups.get(key).lots.push({ ...lot, seedName: seed.name, seedType: seed.type });
     });
 
-    return seeds
-        .filter((seed) => seed.active)
-        .map((seed) => {
-            const stock = stockBySeed.get(String(seed.seedId));
-            return {
-                ...seed,
-                availableStock: stock?.total ?? 0,
-                nextDueDate: stock?.nextDueDate ?? null,
-            };
-        })
-        .filter((seed) => seed.availableStock > 0)
-        .sort((a, b) => a.name.localeCompare(b.name));
+    return [...groups.values()]
+        .map((group) => ({
+            ...group,
+            lots: group.lots.sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999')),
+        }))
+        .sort((a, b) => a.seed.name.localeCompare(b.seed.name, 'es'));
 }

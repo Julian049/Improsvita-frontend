@@ -66,22 +66,27 @@
 }
 
 /* Colores por estado: se heredan de la columna / el diálogo */
-.planting-status-sown {
+.planting-status-planned {
     --planting-c: var(--planting-amb, #9a5b00);
     --planting-cb: var(--planting-amb-bg, #fff3dc);
 }
 
-.planting-status-germinating {
+.planting-status-in_progress {
     --planting-c: var(--planting-teal, #00796b);
     --planting-cb: var(--planting-teal-bg, #e0f2f1);
 }
 
-.planting-status-germinated {
+.planting-status-completed {
     --planting-c: var(--planting-green, #2e7d32);
     --planting-cb: var(--planting-green-bg, #e8f5e9);
 }
 
-.planting-status-finished {
+.planting-status-failed {
+    --planting-c: var(--planting-red, #b3261e);
+    --planting-cb: var(--planting-red-bg, #fdecea);
+}
+
+.planting-status-cancelled {
     --planting-c: var(--planting-muted, #6b7280);
     --planting-cb: var(--planting-surface, #ffffff);
 }
@@ -105,19 +110,6 @@
     color: var(--planting-muted);
 }
 
-.planting-search {
-    width: 100%;
-    max-width: 420px;
-    padding: 10px 12px;
-    border: 1px solid var(--planting-line);
-    border-radius: 8px;
-    background: var(--planting-surface);
-    font-family: inherit;
-    font-size: 14px;
-    color: inherit;
-}
-
-.planting-search:focus,
 .planting-bed:focus-visible,
 .planting-card:focus-visible,
 .planting-x:focus-visible,
@@ -224,7 +216,7 @@
 /* Tablero */
 .planting-board {
     display: grid;
-    grid-template-columns: repeat(4, minmax(250px, 1fr));
+    grid-template-columns: repeat(5, minmax(240px, 1fr));
     gap: 14px;
     align-items: start;
     overflow-x: auto;
@@ -289,12 +281,6 @@
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
 }
 
-.planting-card.off {
-    border-color: var(--planting-red-line);
-    border-left-color: var(--planting-red);
-    background: var(--planting-red-bg);
-}
-
 .planting-r1 {
     display: flex;
     justify-content: space-between;
@@ -347,10 +333,6 @@
     inset: 6px;
     border-radius: 50%;
     background: var(--planting-surface);
-}
-
-.planting-card.off .planting-ring::before {
-    background: var(--planting-red-bg);
 }
 
 .planting-ring b {
@@ -472,11 +454,6 @@
     flex-wrap: wrap;
 }
 
-.planting-off-label {
-    color: var(--planting-red);
-    font-weight: 600;
-}
-
 .planting-x {
     background: none;
     border: 0;
@@ -570,6 +547,38 @@
 
 .planting-dialog-note {
     margin: 2px 0 0;
+}
+
+.planting-germination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.planting-germination label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.planting-germination input {
+    width: 160px;
+    padding: 9px 12px;
+    border: 1px solid var(--planting-line);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    color: inherit;
+}
+
+.planting-germination input:focus {
+    outline: 2px solid var(--planting-green-ring);
+    outline-offset: 1px;
+}
+
+.planting-germination .planting-inline-error {
+    flex-basis: 100%;
 }
 
 .planting-inline-error {

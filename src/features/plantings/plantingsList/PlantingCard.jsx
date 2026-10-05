@@ -20,7 +20,7 @@ export const PlantingCard = ({ planting, onSelect }) => {
     return (
         <article
             tabIndex={0}
-            className={`planting-card ${planting.active ? '' : 'off'}`}
+            className="planting-card"
             onClick={handleClick}
             onKeyDown={handleKeyDown}
         >
@@ -53,11 +53,7 @@ export const PlantingCard = ({ planting, onSelect }) => {
                     Sembrada {formatDate(planting.sowingDate)}
                     {!timing && ` · germ. ${formatDate(planting.expectedGerminationDate)}`}
                 </span>
-                {timing ? (
-                    <span className={`planting-when ${timing.level}`}>{timing.label}</span>
-                ) : (
-                    !planting.active && <span className="planting-when late">Desactivada</span>
-                )}
+                {timing && <span className={`planting-when ${timing.level}`}>{timing.label}</span>}
             </div>
 
             {planting.notes && <p className="planting-note">“{planting.notes}”</p>}
