@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { getAllLots, getLotKardex } from '../lotApi.js';
+import { getLotKardex, getLots } from '../lotApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
 import { getSuppliers } from '../../suppliers/supplierApi.js';
-import { getLotStatusLabel } from '../lotValidation.js';
+import { LOT_STATUS_LABELS, getLotStatusLabel } from '../lotValidation.js';
 import { formatDate } from '../../../utils/dateUtils.js';
 import { getExpirationStatus } from '../../../utils/expirationStatus.js';
 import { formatQty } from '../../../utils/numberUtils.js';
 import {
-    LOT_FILTERS_INITIAL_STATE,
-    SORT_OPTIONS,
-    filterLots,
+    LOT_FILTER_INITIAL_STATE,
+    LOT_FILTER_MODES,
     getStockStatus,
     paginateLots,
-    searchLots,
-    sortLots,
 } from './lotListUtils.js';
 import './LotList.css';
 
@@ -225,6 +222,13 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
     );
 }
 
+const STATUS_OPTIONS = Object.entries(LOT_STATUS_LABELS).map(([value, label]) => ({ value, label }));
+
+function getInitialFilter(location) {
+    const seedId = location.state?.seedId;
+    return seedId ? { mode: 'seedId', value: String(seedId) } : LOT_FILTER_INITIAL_STATE;
+}
+
 function LotListPage() {
     const location = useLocation();
     const [lots, setLots] = useState([]);
@@ -233,20 +237,18 @@ function LotListPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
 
-    const [searchText, setSearchText] = useState('');
-    const [filters, setFilters] = useState(() => ({
-        ...LOT_FILTERS_INITIAL_STATE,
-        seedId: location.state?.seedId ? String(location.state.seedId) : '',
-    }));
-    const [sortBy, setSortBy] = useState('entry_desc');
+    const [isFetchingLots, setIsFetchingLots] = useState(true);
+    const [lotsError, setLotsError] = useState(null);
+
+    const [appliedFilter, setAppliedFilter] = useState(() => getInitialFilter(location));
+    const [draftMode, setDraftMode] = useState(appliedFilter.mode);
     const [page, setPage] = useState(1);
     const [selectedLotId, setSelectedLotId] = useState(null);
     const topRef = useRef(null);
 
     useEffect(() => {
-        Promise.all([getAllLots(), getAllSeeds(), getLocations()])
-            .then(([lotsData, seedsData, locationsData]) => {
-                setLots(lotsData);
+        Promise.all([getAllSeeds(), getLocations()])
+            .then(([seedsData, locationsData]) => {
                 setSeeds(seedsData);
                 setLocations(locationsData);
             })
@@ -256,30 +258,41 @@ function LotListPage() {
             .finally(() => setIsLoading(false));
     }, []);
 
+    useEffect(() => {
+        let cancelled = false;
+
+        getLots(appliedFilter)
+            .then((data) => {
+                if (!cancelled) setLots(data);
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setLots([]);
+                    setLotsError('No se pudo cargar el inventario de lotes.');
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setIsFetchingLots(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [appliedFilter]);
+
     const lotsWithNames = useMemo(() => {
         const seedNameById = new Map(seeds.map((s) => [String(s.seedId), s.name]));
         const locationNameById = new Map(locations.map((l) => [String(l.locationId), l.locationName]));
         return lots.map((lot) => ({
             ...lot,
-            seedName: lot.seedName || seedNameById.get(String(lot.seedId)) || '',
-            locationName: lot.locationName || locationNameById.get(String(lot.locationId)) || '',
+            seedName: seedNameById.get(String(lot.seedId)) || '',
+            locationName: locationNameById.get(String(lot.locationId)) || '',
         }));
     }, [lots, seeds, locations]);
 
-    const statusOptions = useMemo(
-        () => [...new Set(lots.map((lot) => lot.status).filter(Boolean))],
-        [lots]
-    );
-
-    const processedLots = useMemo(() => {
-        const searched = searchLots(lotsWithNames, searchText);
-        const filtered = filterLots(searched, filters);
-        return sortLots(filtered, sortBy);
-    }, [lotsWithNames, searchText, filters, sortBy]);
-
     const { pageItems, totalPages, currentPage } = useMemo(
-        () => paginateLots(processedLots, page),
-        [processedLots, page]
+        () => paginateLots(lotsWithNames, page),
+        [lotsWithNames, page]
     );
 
     useEffect(() => {
@@ -287,24 +300,29 @@ function LotListPage() {
         topRef.current?.scrollIntoView({ block: 'start' });
     }, [selectedLotId]);
 
-    function setFilter(field, value) {
-        setFilters((prev) => ({ ...prev, [field]: value }));
+    const hasAppliedFilter = appliedFilter.mode !== '';
+
+    function applyFilter(next) {
         setPage(1);
+        if (next.mode === appliedFilter.mode && next.value === appliedFilter.value) return;
+        setIsFetchingLots(true);
+        setLotsError(null);
+        setAppliedFilter(next);
     }
 
-    function handleFilterChange(field) {
-        return (e) => setFilter(field, e.target.value);
+    function handleModeChange(e) {
+        setDraftMode(e.target.value);
+        if (hasAppliedFilter) applyFilter(LOT_FILTER_INITIAL_STATE);
     }
 
-    function handleSearchChange(e) {
-        setSearchText(e.target.value);
-        setPage(1);
+    function handleValueChange(e) {
+        const value = e.target.value;
+        applyFilter(value ? { mode: draftMode, value } : LOT_FILTER_INITIAL_STATE);
     }
 
-    function handleClearFilters() {
-        setFilters(LOT_FILTERS_INITIAL_STATE);
-        setSearchText('');
-        setPage(1);
+    function handleClearFilter() {
+        setDraftMode('');
+        applyFilter(LOT_FILTER_INITIAL_STATE);
     }
 
     function handleRowClick(e, lotId) {
@@ -319,16 +337,52 @@ function LotListPage() {
     }
 
     function handleSeeSeedLots(seedId) {
-        setFilter('seedId', String(seedId));
+        setDraftMode('seedId');
+        applyFilter({ mode: 'seedId', value: String(seedId) });
         setSelectedLotId(null);
     }
 
-    const hasActiveFilters =
-        searchText.trim() !== '' || Object.values(filters).some((value) => value !== '');
+    function getValueOptions(mode) {
+        switch (mode) {
+            case 'seedId':
+                return {
+                    label: 'Semilla',
+                    placeholder: 'Selecciona una semilla',
+                    options: seeds.map((seed) => ({ value: String(seed.seedId), label: seed.name })),
+                };
+            case 'locationId':
+                return {
+                    label: 'Ubicación',
+                    placeholder: 'Selecciona una ubicación',
+                    options: locations.map((l) => ({ value: String(l.locationId), label: l.locationName })),
+                };
+            case 'status':
+                return { label: 'Estado', placeholder: 'Selecciona un estado', options: STATUS_OPTIONS };
+            default:
+                return null;
+        }
+    }
 
-    const selectedSeedName = filters.seedId
-        ? seeds.find((s) => String(s.seedId) === String(filters.seedId))?.name || ''
-        : '';
+    function renderValueControl() {
+        const config = getValueOptions(draftMode);
+        if (!config) return null;
+
+        return (
+            <select
+                className="lot-select"
+                aria-label={config.label}
+                value={appliedFilter.mode === draftMode ? appliedFilter.value : ''}
+                onChange={handleValueChange}
+            >
+                <option value="">{config.placeholder}</option>
+                {config.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        );
+    }
 
     if (isLoading) {
         return <div className="lot-list-loading">Cargando inventario de lotes...</div>;
@@ -338,7 +392,7 @@ function LotListPage() {
         return <div className="lot-list-message error">{loadError}</div>;
     }
 
-    if (lots.length === 0) {
+    if (!isFetchingLots && !lotsError && !hasAppliedFilter && lots.length === 0) {
         return (
             <div className="lot-list-empty">
                 <p>No existen lotes registrados en el inventario.</p>
@@ -376,101 +430,38 @@ function LotListPage() {
             </div>
 
             <div className="lot-list-toolbar">
-                <input
-                    type="search"
-                    className="lot-search-input"
-                    placeholder="Buscar por número de lote o semilla"
-                    aria-label="Buscar lotes"
-                    value={searchText}
-                    onChange={handleSearchChange}
-                />
-
                 <select
                     className="lot-select"
-                    aria-label="Semilla"
-                    value={filters.seedId}
-                    onChange={handleFilterChange('seedId')}
+                    aria-label="Filtrar por"
+                    value={draftMode}
+                    onChange={handleModeChange}
                 >
-                    <option value="">Todas las semillas</option>
-                    {seeds.map((seed) => (
-                        <option key={seed.seedId} value={seed.seedId}>
-                            {seed.name}
-                        </option>
-                    ))}
-                </select>
-
-                <select
-                    className="lot-select"
-                    aria-label="Ubicación"
-                    value={filters.locationId}
-                    onChange={handleFilterChange('locationId')}
-                >
-                    <option value="">Todas las ubicaciones</option>
-                    {locations.map((location) => (
-                        <option key={location.locationId} value={location.locationId}>
-                            {location.locationName}
-                        </option>
-                    ))}
-                </select>
-
-                <select
-                    className="lot-sort-select"
-                    aria-label="Ordenar"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                >
-                    {SORT_OPTIONS.map((option) => (
+                    {LOT_FILTER_MODES.map((option) => (
                         <option key={option.value} value={option.value}>
                             {option.label}
                         </option>
                     ))}
                 </select>
 
-            </div>
+                {renderValueControl()}
 
-            <div className="lot-chips">
-                {selectedSeedName && (
-                    <div className="lot-active-filter">
-                        Semilla: <span>{selectedSeedName}</span>
-                        <button
-                            type="button"
-                            aria-label="Quitar filtro"
-                            onClick={() => setFilter('seedId', '')}
-                        >
-                            ✕
-                        </button>
-                    </div>
-                )}
-
-                <div className="lot-chips" role="group" aria-label="Estado">
-                    <button
-                        type="button"
-                        className={`lot-chip ${filters.status === '' ? 'on' : ''}`}
-                        onClick={() => setFilter('status', '')}
-                    >
-                        Todos
+                {(hasAppliedFilter || draftMode !== '') && (
+                    <button type="button" className="seed-button secondary" onClick={handleClearFilter}>
+                        Limpiar filtro
                     </button>
-                    {statusOptions.map((status) => (
-                        <button
-                            key={status}
-                            type="button"
-                            className={`lot-chip ${filters.status === status ? 'on' : ''}`}
-                            onClick={() => setFilter('status', status)}
-                        >
-                            {getLotStatusLabel(status)}
-                        </button>
-                    ))}
-                </div>
+                )}
             </div>
 
-            {processedLots.length === 0 ? (
+            {isFetchingLots ? (
+                <div className="lot-list-loading">Cargando lotes...</div>
+            ) : lotsError ? (
+                <div className="lot-list-message error">{lotsError}</div>
+            ) : lots.length === 0 ? (
                 <div className="lot-list-message">
-                    No hay lotes con esos criterios.
-                    {hasActiveFilters && (
-                        <button type="button" className="lot-link" onClick={handleClearFilters}>
-                            Limpiar búsqueda y filtros
-                        </button>
-                    )}
+                    No hay lotes con ese filtro.
+                    <button type="button" className="lot-link" onClick={handleClearFilter}>
+                        Limpiar filtro
+                    </button>
                 </div>
             ) : (
                 <>
@@ -511,7 +502,7 @@ function LotListPage() {
                                                 <button
                                                     type="button"
                                                     className="lot-link"
-                                                    onClick={() => setFilter('seedId', String(lot.seedId))}
+                                                    onClick={() => handleSeeSeedLots(lot.seedId)}
                                                 >
                                                     {lot.seedName}
                                                 </button>
@@ -553,7 +544,7 @@ function LotListPage() {
                             Anterior
                         </button>
                         <span>
-                            Mostrando {processedLots.length} de {lots.length} · Página {currentPage} de {totalPages}
+                            {lots.length} {lots.length === 1 ? 'lote' : 'lotes'} · Página {currentPage} de {totalPages}
                         </span>
                         <button
                             type="button"

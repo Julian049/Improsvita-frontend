@@ -40,15 +40,21 @@ function toLotRequest(payload) {
     };
 }
 
-export async function getAllLots() {
+const FILTER_PARAMS = ['seedId', 'locationId', 'status'];
+
+// El backend aplica un solo filtro por petición (prioridad seedId > locationId > status).
+export async function getLots({ mode, value } = {}) {
     if (MOCK_CONFIG.lots) {
         await mockDelay();
         return MOCK_LOTS;
     }
 
-    const { data } = await axiosClient.get('/inventory/lots');
+    const params = FILTER_PARAMS.includes(mode) && value ? { [mode]: value } : undefined;
+    const { data } = await axiosClient.get('/inventory/lots', { params });
     return data.map(fromLotResponse);
 }
+
+export const getAllLots = () => getLots();
 
 export async function getLotById(id) {
     if (MOCK_CONFIG.lots) {
