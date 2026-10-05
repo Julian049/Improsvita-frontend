@@ -15,7 +15,7 @@ function toSupplierRequest(payload) {
     return {
         name: payload.name,
         phone: payload.phone,
-        email: payload.email || null,
+        email: payload.email,
     };
 }
 

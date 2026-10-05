@@ -1,5 +1,5 @@
 import axiosClient from '../../api/axiosClient';
-import { toDateOnly, toIsoDateTime } from '../../utils/dateUtils';
+import { toDateOnly } from '../../utils/dateUtils';
 import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
 import { MOCK_LOTS } from '../../mocks/lotMocks';
 
@@ -29,14 +29,16 @@ function fromMovementResponse(movement) {
     };
 }
 
-function toLotRequest(payload) {
+// EntryRequest del backend: entryDate vacía la toma como hoy; dueDate es opcional.
+function toEntryRequest(payload) {
     return {
         seedId: Number(payload.seedId),
+        supplierId: Number(payload.supplierId),
         locationId: Number(payload.locationId),
         lotNumber: Number(payload.lotNumber),
-        entryDate: toIsoDateTime(payload.entryDate),
-        dueDate: toIsoDateTime(payload.dueDate),
-        initialQuantity: Number(payload.initialQuantity),
+        quantity: Number(payload.quantity),
+        entryDate: payload.entryDate || null,
+        dueDate: payload.dueDate || null,
     };
 }
 
@@ -56,18 +58,6 @@ export async function getLots({ mode, value } = {}) {
 
 export const getAllLots = () => getLots();
 
-export async function getLotById(id) {
-    if (MOCK_CONFIG.lots) {
-        await mockDelay();
-        const found = MOCK_LOTS.find((l) => String(l.lotId) === String(id));
-        if (!found) throw new Error('Lote no encontrado');
-        return found;
-    }
-
-    const { data } = await axiosClient.get(`/inventory/lots/${id}`);
-    return fromLotResponse(data);
-}
-
 export async function getLotKardex(lotId) {
     if (MOCK_CONFIG.lots) {
         await mockDelay();
@@ -81,30 +71,18 @@ export async function getLotKardex(lotId) {
 export async function createLot(payload) {
     if (MOCK_CONFIG.lots) {
         await mockDelay();
+        const request = toEntryRequest(payload);
         const newLot = {
             lotId: Date.now(),
-            ...toLotRequest(payload),
-            availableQuantity: Number(payload.initialQuantity),
+            ...request,
+            initialQuantity: request.quantity,
+            availableQuantity: request.quantity,
             status: 'AVAILABLE',
         };
         MOCK_LOTS.push(newLot);
         return newLot;
     }
 
-    const { data } = await axiosClient.post('/lots', toLotRequest(payload));
-    return fromLotResponse(data);
-}
-
-export async function updateLot(id, payload) {
-    if (MOCK_CONFIG.lots) {
-        await mockDelay();
-        const index = MOCK_LOTS.findIndex((l) => String(l.lotId) === String(id));
-        if (index !== -1) {
-            MOCK_LOTS[index] = { ...MOCK_LOTS[index], ...toLotRequest(payload) };
-            return MOCK_LOTS[index];
-        }
-    }
-
-    const { data } = await axiosClient.put(`/lots/${id}`, toLotRequest(payload));
+    const { data } = await axiosClient.post('/inventory/entries', toEntryRequest(payload));
     return fromLotResponse(data);
 }

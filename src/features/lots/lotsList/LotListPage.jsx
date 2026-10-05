@@ -118,9 +118,6 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
                             Ver lotes de esta semilla
                         </button>
                     )}
-                    <Link to={`/lots/${lot.lotId}/edit`} className="seed-button primary">
-                        Editar lote
-                    </Link>
                 </div>
             </div>
 
@@ -243,8 +240,23 @@ function LotListPage() {
     const [appliedFilter, setAppliedFilter] = useState(() => getInitialFilter(location));
     const [draftMode, setDraftMode] = useState(appliedFilter.mode);
     const [page, setPage] = useState(1);
-    const [selectedLotId, setSelectedLotId] = useState(null);
+    const [selectedLotId, setSelectedLotId] = useState(location.state?.lotId ?? null);
     const topRef = useRef(null);
+
+    // La campana de alertas navega a /lots con { lotId }; si ya estamos aquí no hay remontaje.
+    const [navigationKey, setNavigationKey] = useState(location.key);
+    if (navigationKey !== location.key) {
+        setNavigationKey(location.key);
+        if (location.state?.lotId) {
+            setSelectedLotId(location.state.lotId);
+            if (appliedFilter.mode !== '') {
+                setDraftMode('');
+                setIsFetchingLots(true);
+                setLotsError(null);
+                setAppliedFilter(LOT_FILTER_INITIAL_STATE);
+            }
+        }
+    }
 
     useEffect(() => {
         Promise.all([getAllSeeds(), getLocations()])

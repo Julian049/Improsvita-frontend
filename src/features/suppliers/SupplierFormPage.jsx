@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createSupplier } from './supplierApi';
+import { createSupplier, getSuppliers } from './supplierApi';
+import { getApiErrorMessage } from '../../api/apiError';
 import {
     FIELD_LABELS,
     SUPPLIER_FORM_INITIAL_VALUES,
@@ -49,15 +50,24 @@ function SupplierFormPage() {
 
         setIsSubmitting(true);
         try {
+            // Un correo repetido viola la restricción única y el backend responde 500 sin mensaje.
+            const existing = await getSuppliers();
+            const emailTaken = existing.some(
+                (supplier) => supplier.email?.toLowerCase() === payload.email.toLowerCase()
+            );
+            if (emailTaken) {
+                setErrors({ email: 'Ya existe un proveedor con este correo.' });
+                setSubmitMessage({ type: 'error', text: 'Revisa los campos marcados: Correo electrónico.' });
+                return;
+            }
+
             await createSupplier(payload);
             setSubmitMessage({ type: 'success', text: 'Proveedor registrado exitosamente.' });
             setValues(SUPPLIER_FORM_INITIAL_VALUES);
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
-                text:
-                    err.response?.data?.message ||
-                    'No se pudo registrar el proveedor. Intenta nuevamente.',
+                text: getApiErrorMessage(err, 'No se pudo registrar el proveedor. Intenta nuevamente.'),
             });
         } finally {
             setIsSubmitting(false);
@@ -99,7 +109,7 @@ function SupplierFormPage() {
                         </label>
 
                         <label className="supplier-field">
-                            <span>Correo electrónico (opcional)</span>
+                            <span>Correo electrónico *</span>
                             <input
                                 type="email"
                                 maxLength={100}

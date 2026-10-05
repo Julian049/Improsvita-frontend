@@ -26,7 +26,8 @@ function AlertItem({ lot, onNavigate }) {
     return (
         <li>
             <Link
-                to={`/lots/${lot.lotId}/edit`}
+                to="/lots"
+                state={{ lotId: lot.lotId }}
                 className={`notif-item ${level}`}
                 onClick={onNavigate}
             >

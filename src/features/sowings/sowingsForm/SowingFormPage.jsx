@@ -283,6 +283,7 @@ function SowingFormPage() {
                                 label="Fecha de siembra"
                                 required={isRequired('sowingDate')}
                                 error={errors.sowingDate}
+                                hint="Si la dejas vacía se registra con la fecha de hoy."
                             >
                                 <input
                                     type="date"

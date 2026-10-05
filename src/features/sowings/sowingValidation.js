@@ -9,7 +9,8 @@ export const SOWING_FIELD_LABELS = {
     notes: 'Notas',
 };
 
-export const SOWING_REQUIRED_FIELDS = ['lotId', 'bedId', 'quantity', 'sowingDate'];
+// SowRequest del backend: sowingDate vacía la toma como hoy; expectedGerminationDate y notes son opcionales.
+export const SOWING_REQUIRED_FIELDS = ['lotId', 'bedId', 'quantity'];
 
 export const SOWING_LIMITS = {
     quantityDigits: 6,

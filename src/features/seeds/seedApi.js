@@ -37,9 +37,20 @@ async function fetchSuppliers() {
     return data;
 }
 
-async function fetchActiveSupplierIds(seedId) {
+// El backend guarda una única fila por (semilla, proveedor) y desvincular solo la desactiva:
+// volver a vincular ese par choca con la restricción única, así que esos proveedores quedan bloqueados.
+async function fetchSupplierLinks(seedId) {
     const { data } = await axiosClient.get('/seed-suppliers', { params: { seedId } });
-    return data.filter((link) => link.active !== false).map((link) => link.supplierId);
+    const activeIds = data.filter((link) => link.active).map((link) => link.supplierId);
+    const blockedIds = data
+        .filter((link) => !link.active && !activeIds.includes(link.supplierId))
+        .map((link) => link.supplierId);
+    return { activeIds, blockedIds };
+}
+
+export async function getActiveSupplierIdsBySeed(seedId) {
+    const { activeIds } = await fetchSupplierLinks(seedId);
+    return activeIds;
 }
 
 async function fetchSuppliersBySeed() {
@@ -84,9 +95,14 @@ async function fetchSeedsByFilter({ mode, value } = {}) {
 
 async function syncSuppliers(seedId, supplierIds) {
     const wanted = [...new Set(supplierIds.map(Number))];
-    const current = await fetchActiveSupplierIds(seedId);
+    const { activeIds: current, blockedIds } = await fetchSupplierLinks(seedId);
 
     const toLink = wanted.filter((id) => !current.includes(id));
+    if (toLink.some((id) => blockedIds.includes(id))) {
+        const error = new Error('Uno de los proveedores ya fue desvinculado de esta semilla y no se puede volver a vincular.');
+        error.userMessage = error.message;
+        throw error;
+    }
     const toUnlink = current.filter((id) => !wanted.includes(id));
 
     await Promise.all([
@@ -117,14 +133,14 @@ export async function getSeeds(filter = { mode: '', value: '' }) {
 export const getAllSeeds = () => getSeeds();
 
 export async function getSeedById(id) {
-    const [{ data: seed }, suppliers, supplierIds] = await Promise.all([
+    const [{ data: seed }, suppliers, { activeIds, blockedIds }] = await Promise.all([
         axiosClient.get(`/seeds/${id}`),
         fetchSuppliers(),
-        fetchActiveSupplierIds(id),
+        fetchSupplierLinks(id),
     ]);
 
-    const linked = suppliers.filter((s) => supplierIds.includes(s.id));
-    return fromSeedResponse(seed, linked);
+    const linked = suppliers.filter((s) => activeIds.includes(s.id));
+    return { ...fromSeedResponse(seed, linked), blockedSupplierIds: blockedIds };
 }
 
 export async function createSeed(payload) {
