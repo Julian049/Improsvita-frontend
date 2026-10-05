@@ -5,15 +5,15 @@ const MAIN_LINKS = [
     { to: '/', label: 'Panel principal', end: true },
     { to: '/seeds', label: 'Semillas' },
     { to: '/lots', label: 'Lotes' },
-    { to: '/seedlings', label: 'Plántulas' },
+    // { to: '/seedlings', label: 'Plántulas' },
     { to: '/sowings', label: 'Siembras' },
 ];
 
 const SECONDARY_LINKS = [
-    { to: '/reservations', label: 'Reservas' },
-    { to: '/sales', label: 'Ventas' },
+    // { to: '/reservations', label: 'Reservas' },
+    // { to: '/sales', label: 'Ventas' },
     { to: '/suppliers', label: 'Contactos' },
-    { to: '/locations', label: 'Ubicaciones' },
+    // { to: '/locations', label: 'Ubicaciones' },
 ];
 
 function SidebarLink({ to, label, end }) {
