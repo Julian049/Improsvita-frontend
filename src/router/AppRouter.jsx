@@ -11,6 +11,10 @@ import SupplierListPage from '../features/suppliers/SupplierListPage';
 import SupplierFormPage from '../features/suppliers/SupplierFormPage';
 import SowingFormPage from '../features/sowings/sowingsForm/SowingFormPage.jsx';
 import SowingListPage from '../features/sowings/sowingsList/SowingListPage.jsx';
+import LocationListPage from '../features/locations/LocationListPage.jsx';
+import LocationFormPage from '../features/locations/LocationFormPage.jsx';
+import BedListPage from '../features/beds/BedListPage.jsx';
+import BedFormPage from '../features/beds/BedFormPage.jsx';
 
 function Dashboard() {
     return <h1>Panel principal</h1>;
@@ -36,6 +40,12 @@ function AppRouter() {
                         <Route path="suppliers/new" element={<SupplierFormPage />} />
                         <Route path="sowings" element={<SowingListPage />} />
                         <Route path="sowings/new" element={<SowingFormPage />} />
+                        <Route path="locations" element={<LocationListPage />} />
+                        <Route path="locations/new" element={<LocationFormPage />} />
+                        <Route path="locations/:id/edit" element={<LocationFormPage />} />
+                        <Route path="beds" element={<BedListPage />} />
+                        <Route path="beds/new" element={<BedFormPage />} />
+                        <Route path="beds/:id/edit" element={<BedFormPage />} />
                         <Route path="seedlings" element={<h1>Plántulas</h1>} />
                         <Route path="reservations" element={<h1>Reservas</h1>} />
                         <Route path="sales" element={<h1>Ventas</h1>} />
