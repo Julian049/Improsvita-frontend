@@ -1,28 +1,22 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { MOCK_NOTIFICATION_ALERTS } from './notificationMocks';
-import { getAllLots } from '../features/lots/lotApi';
-import { getAllSeeds } from '../features/seeds/seedApi';
+import { getLots } from '../features/lots/lotApi';
+import { getSeedCatalog } from '../features/seeds/seedApi';
 import { ALERT_LEVELS, getExpirationStatus } from '../utils/expirationStatus';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-const USE_MOCKS = true;
 
-async function fetchLotsWithSeedNames() {
-    let apiLots = [];
+// Solo lotes con stock (status=AVAILABLE en el backend): un lote agotado no necesita alerta.
+async function fetchAvailableLotsWithSeedNames() {
+    const [lotsData, seedsData] = await Promise.all([
+        getLots({ mode: 'status', value: 'AVAILABLE' }),
+        getSeedCatalog(),
+    ]);
+    const seedNameById = new Map(seedsData.map((s) => [String(s.seedId), s.name]));
 
-    try {
-        const [lotsData, seedsData] = await Promise.all([getAllLots(), getAllSeeds()]);
-        const seedNameById = new Map(seedsData.map((s) => [String(s.seedId), s.name]));
-
-        apiLots = lotsData.map((lot) => ({
-            ...lot,
-            seedName: lot.seedName || seedNameById.get(String(lot.seedId)) || 'Semilla sin nombre',
-        }));
-    } catch (err) {
-        if (!USE_MOCKS) throw err;
-    }
-
-    return USE_MOCKS ? [...apiLots, ...MOCK_NOTIFICATION_ALERTS] : apiLots;
+    return lotsData.map((lot) => ({
+        ...lot,
+        seedName: seedNameById.get(String(lot.seedId)) || 'Semilla sin nombre',
+    }));
 }
 
 export function useExpirationAlerts() {
@@ -35,7 +29,7 @@ export function useExpirationAlerts() {
         let isActive = true;
 
         const sync = () =>
-            fetchLotsWithSeedNames()
+            fetchAvailableLotsWithSeedNames()
                 .then((data) => {
                     if (!isActive) return;
                     setLots(data);
@@ -59,10 +53,10 @@ export function useExpirationAlerts() {
 
     const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
 
+    // El backend no marca vencimientos por fecha: el nivel de alerta se calcula con dueDate.
     const alerts = useMemo(
         () =>
             lots
-                .filter((lot) => Number(lot.availableQuantity) > 0)
                 .map((lot) => ({ ...lot, expiration: getExpirationStatus(lot.dueDate) }))
                 .filter((lot) => ALERT_LEVELS.includes(lot.expiration.level))
                 .sort((a, b) => a.expiration.daysLeft - b.expiration.daysLeft),

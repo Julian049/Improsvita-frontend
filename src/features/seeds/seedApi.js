@@ -17,8 +17,6 @@ function fromSeedResponse(seed, suppliers = []) {
         description: seed.description ?? '',
         totalAvailable: seed.totalAvailable ?? 0,
         active: seed.active,
-        createdDate: null,
-        lastUpdated: null,
         supplierIds: suppliers.map((s) => s.id),
         supplierNames: suppliers.map((s) => s.name),
     };
@@ -132,6 +130,17 @@ export async function getSeeds(filter = { mode: '', value: '' }) {
 
 export const getAllSeeds = () => getSeeds();
 
+// Solo GET /seeds (sin cruzar proveedores): para vistas que únicamente necesitan nombres.
+export async function getSeedCatalog() {
+    if (MOCK_CONFIG.seeds) {
+        await mockDelay();
+        return MOCK_SEEDS;
+    }
+
+    const { data } = await axiosClient.get('/seeds');
+    return data.map((seed) => fromSeedResponse(seed));
+}
+
 export async function getSeedById(id) {
     const [{ data: seed }, suppliers, { activeIds, blockedIds }] = await Promise.all([
         axiosClient.get(`/seeds/${id}`),
@@ -161,4 +170,32 @@ export async function updateSeed(id, payload) {
     }
 
     return getSeedById(id);
+}
+
+function pluralize(count, singular, plural) {
+    return `${count} ${count === 1 ? singular : plural}`;
+}
+
+// DELETE /seeds/{id} borra la fila; si hay lotes o vínculos con proveedores la BD lo rechaza y el
+// backend responde 403 (el interceptor lo trataría como sesión caída), así que se valida antes.
+// Los vínculos desactivados también cuentan: siguen existiendo y el backend no permite borrarlos.
+export async function deleteSeed(id) {
+    const [{ data: lots }, { data: links }] = await Promise.all([
+        axiosClient.get('/inventory/lots', { params: { seedId: id } }),
+        axiosClient.get('/seed-suppliers', { params: { seedId: id } }),
+    ]);
+
+    if (lots.length > 0 || links.length > 0) {
+        const reasons = [
+            lots.length > 0 && pluralize(lots.length, 'lote', 'lotes'),
+            links.length > 0 && pluralize(links.length, 'vínculo con proveedores', 'vínculos con proveedores'),
+        ].filter(Boolean);
+        const error = new Error(
+            `No se puede eliminar: la semilla tiene ${reasons.join(' y ')}. Solo se pueden eliminar semillas que nunca tuvieron lotes ni proveedores.`
+        );
+        error.userMessage = error.message;
+        throw error;
+    }
+
+    await axiosClient.delete(`/seeds/${id}`);
 }

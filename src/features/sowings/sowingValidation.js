@@ -1,4 +1,5 @@
 import { toLocalDate } from '../../utils/dateUtils';
+import { formatQty } from '../../utils/numberUtils';
 
 export const SOWING_FIELD_LABELS = {
     lotId: 'Lote',
@@ -21,6 +22,8 @@ export const SOWING_MESSAGES = {
     success: 'Siembra registrada exitosamente.',
     invalidQuantity: 'La cantidad debe ser un número entero mayor que cero.',
     exceedsStock: 'La cantidad solicitada supera el stock disponible del lote.',
+    bedFull: 'La cama no tiene espacio libre.',
+    exceedsBed: (free) => `La cantidad supera el espacio libre de la cama (${formatQty(free)}).`,
     noStock: 'El lote seleccionado no existe o no tiene stock disponible.',
     saveError: 'Error al registrar la siembra. Intente nuevamente o contacte al administrador.',
 };
@@ -43,7 +46,8 @@ function isPositiveInteger(value, maxDigits) {
     return /^\d+$/.test(text) && Number(text) > 0 && text.length <= maxDigits;
 }
 
-export function validateSowingForm(values, availableStock = null) {
+// bedFree: espacio libre de la cama, o null si no tiene capacidad máxima definida.
+export function validateSowingForm(values, { availableStock = null, bedFree = null } = {}) {
     const errors = {};
 
     SOWING_REQUIRED_FIELDS.forEach((field) => {
@@ -54,11 +58,17 @@ export function validateSowingForm(values, availableStock = null) {
         errors.lotId = SOWING_MESSAGES.noStock;
     }
 
+    if (!isEmpty(values.bedId) && bedFree === 0) {
+        errors.bedId = SOWING_MESSAGES.bedFull;
+    }
+
     if (!isEmpty(values.quantity)) {
         if (!isPositiveInteger(values.quantity, SOWING_LIMITS.quantityDigits)) {
             errors.quantity = SOWING_MESSAGES.invalidQuantity;
         } else if (availableStock !== null && Number(values.quantity) > availableStock) {
             errors.quantity = SOWING_MESSAGES.exceedsStock;
+        } else if (bedFree !== null && Number(values.quantity) > bedFree) {
+            errors.quantity = SOWING_MESSAGES.exceedsBed(bedFree);
         }
     }
 

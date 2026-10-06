@@ -51,16 +51,6 @@ export const SeedDetailModal = ({ seed, typeLabel, lots, stock, lotsLoaded, onSe
 
                         <div className="seed-dk">
                             <div>
-                                <span>Fecha de creación</span>
-                                <b>{formatDate(seed.createdDate)}</b>
-                            </div>
-                            {seed.updatedDate && (
-                                <div>
-                                    <span>Última actualización</span>
-                                    <b>{formatDate(seed.updatedDate)}</b>
-                                </div>
-                            )}
-                            <div>
                                 <span>Stock disponible</span>
                                 {lotsLoaded ? (
                                     <b className={stock ? '' : 'seed-out'}>

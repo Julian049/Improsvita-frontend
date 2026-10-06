@@ -1,5 +1,5 @@
 import { formatQty } from '../../../utils/numberUtils';
-import { getBedUsage } from './sowingListUtils';
+import { getBedUsage } from '../sowingUtils';
 
 export const SowingBedStrip = ({ beds, sowings, selectedBedId, onSelect, onClear }) => (
     <section className="sowing-section">
@@ -34,7 +34,9 @@ export const SowingBedStrip = ({ beds, sowings, selectedBedId, onSelect, onClear
                             <i style={{ width: `${percent}%` }} />
                         </div>
                         <small>
-                            {formatQty(used)} / {formatQty(bed.maxCapacity)} uds
+                            {bed.maxCapacity > 0
+                                ? `${formatQty(used)} / ${formatQty(bed.maxCapacity)} uds`
+                                : `${formatQty(used)} uds · sin capacidad definida`}
                             {bed.active ? '' : ' · inactiva'}
                         </small>
                     </button>

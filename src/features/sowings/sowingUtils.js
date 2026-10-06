@@ -1,4 +1,5 @@
 import { getExpirationStatus } from '../../utils/expirationStatus';
+import { isTerminalStatus } from './sowingStatus';
 
 export function getTodayDateString(date = new Date()) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -26,4 +27,20 @@ export function groupLotsBySeed(lots, seeds, today = new Date()) {
     });
 
     return [...groups.values()];
+}
+
+// Ocupan la cama las siembras que siguen abiertas (planificadas o en progreso).
+// El backend no controla la capacidad de la cama: este cálculo es la única validación.
+export function getBedUsage(bed, sowings) {
+    const used = sowings
+        .filter((sowing) => String(sowing.bedId) === String(bed.bedId) && !isTerminalStatus(sowing.status))
+        .reduce((total, sowing) => total + (Number(sowing.quantitySown) || 0), 0);
+
+    const hasCapacity = bed.maxCapacity > 0;
+    return {
+        used,
+        // null = la cama no tiene capacidad máxima definida, así que no hay límite.
+        free: hasCapacity ? Math.max(bed.maxCapacity - used, 0) : null,
+        percent: hasCapacity ? Math.min(100, (used / bed.maxCapacity) * 100) : 0,
+    };
 }
