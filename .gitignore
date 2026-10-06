@@ -1,6 +1,7 @@
 # Created by https://www.toptal.com/developers/gitignore/api/react,node,dotenv,webstorm,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=react,node,dotenv,webstorm,visualstudiocode
 backend.txt
+DATABASE.sql
 
 ### dotenv ###
 .env
