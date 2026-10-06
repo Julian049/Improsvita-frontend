@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerRequest } from '../../api/authApi';
+import { getApiErrorMessage } from '../../api/apiError';
 import './LoginPage.css';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -62,9 +63,11 @@ function RegisterPage() {
                 navigate('/login', { replace: true });
             }, 1500);
         } catch (err) {
+            // El backend responde 403 sin cuerpo cuando el correo ya existe.
             const message =
-                err.response?.data?.message ||
-                'No se pudo crear la cuenta. Intenta nuevamente.';
+                err.response?.status === 403
+                    ? 'No se pudo crear la cuenta. Es posible que el correo ya esté registrado.'
+                    : getApiErrorMessage(err, 'No se pudo crear la cuenta. Intenta nuevamente.');
             setSubmitError(message);
         } finally {
             setIsSubmitting(false);

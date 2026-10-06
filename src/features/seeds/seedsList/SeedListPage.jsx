@@ -1,105 +1,280 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getAllSeeds, getSuppliers } from '../seedApi.js';
-import { SEED_TYPE_OPTIONS } from '../seedValidation.js';
+import {useEffect, useMemo, useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import {deleteSeed, getSeeds} from '../seedApi.js';
+import {getSuppliers} from '../../suppliers/supplierApi';
+import {getAllLots} from '../../lots/lotApi.js';
+import {SEED_TYPE_OPTIONS} from '../seedValidation.js';
 import {
-    SEED_FILTERS_INITIAL_STATE,
-    SORT_OPTIONS,
-    filterSeeds,
+    SEED_FILTER_INITIAL_STATE,
+    SEED_FILTER_MODES,
     paginateSeeds,
-    searchSeeds,
-    sortSeeds,
 } from './seedListUtils.js';
+import {SeedCard} from './SeedCard';
+import {SeedDetailModal} from './SeedDetailModal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog.jsx';
+import {getApiErrorMessage} from '../../../api/apiError.js';
 import './SeedList.css';
 
 const SEED_TYPE_LABELS = Object.fromEntries(
     SEED_TYPE_OPTIONS.map((option) => [option.value, option.label])
 );
 
-function formatDate(dateString) {
-    if (!dateString) return '—';
-    const [year, month, day] = dateString.split('-');
-    return `${day}/${month}/${year}`;
-}
+const sumStock = (lots) => lots.reduce((total, lot) => total + (Number(lot.availableQuantity) || 0), 0);
 
-function SeedListPage() {
+export const SeedListPage = () => {
+    const navigate = useNavigate();
+
     const [seeds, setSeeds] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [lots, setLots] = useState([]);
+    const [lotsLoaded, setLotsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
 
-    const [searchText, setSearchText] = useState('');
-    const [filters, setFilters] = useState(SEED_FILTERS_INITIAL_STATE);
-    const [sortBy, setSortBy] = useState('acquisition_desc');
+    const [isFetchingSeeds, setIsFetchingSeeds] = useState(true);
+    const [seedsError, setSeedsError] = useState(null);
+
+    const [draftMode, setDraftMode] = useState('');
+    const [draftValue, setDraftValue] = useState('');
+    const [filterError, setFilterError] = useState('');
+    const [appliedFilter, setAppliedFilter] = useState(SEED_FILTER_INITIAL_STATE);
+
     const [page, setPage] = useState(1);
-    const [showFilters, setShowFilters] = useState(false);
+    const [selectedSeedId, setSelectedSeedId] = useState(null);
+
+    const [seedToDelete, setSeedToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteMessage, setDeleteMessage] = useState(null);
 
     useEffect(() => {
-        Promise.all([getAllSeeds(), getSuppliers()])
-            .then(([seedsData, suppliersData]) => {
-                setSeeds(seedsData);
+        Promise.all([
+            getSuppliers(),
+            getAllLots().then(
+                (data) => ({data, ok: true}),
+                () => ({data: [], ok: false})
+            ),
+        ])
+            .then(([suppliersData, lotsResult]) => {
                 setSuppliers(suppliersData);
+                setLots(lotsResult.data);
+                setLotsLoaded(lotsResult.ok);
             })
             .catch(() => {
-                setLoadError('No se pudo cargar el inventario de semillas.');
+                setLoadError('No se pudo cargar el catálogo de semillas.');
             })
             .finally(() => setIsLoading(false));
     }, []);
 
-    const seedsWithSupplierName = useMemo(() => {
-        const supplierNameById = new Map(suppliers.map((s) => [String(s.id), s.name]));
+    useEffect(() => {
+        let cancelled = false;
+        setIsFetchingSeeds(true);
+        setSeedsError(null);
+
+        getSeeds(appliedFilter)
+            .then((data) => {
+                if (!cancelled) setSeeds(data);
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setSeeds([]);
+                    setSeedsError('No se pudo cargar el catálogo de semillas.');
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setIsFetchingSeeds(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [appliedFilter]);
+
+    const seedsWithSupplierNames = useMemo(() => {
+        const nameById = new Map(suppliers.map((s) => [String(s.supplierId), s.name]));
         return seeds.map((seed) => ({
             ...seed,
-            supplierName: seed.supplierName || supplierNameById.get(String(seed.supplierId)) || '',
+            supplierNames:
+                seed.supplierNames.length > 0
+                    ? seed.supplierNames
+                    : seed.supplierIds.map((id) => nameById.get(String(id))).filter(Boolean),
         }));
     }, [seeds, suppliers]);
 
-    const processedSeeds = useMemo(() => {
-        const searched = searchSeeds(seedsWithSupplierName, searchText);
-        const filtered = filterSeeds(searched, filters);
-        return sortSeeds(filtered, sortBy);
-    }, [seedsWithSupplierName, searchText, filters, sortBy]);
+    const lotsBySeed = useMemo(() => {
+        const map = new Map();
+        lots.forEach((lot) => {
+            const key = String(lot.seedId);
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(lot);
+        });
+        return map;
+    }, [lots]);
 
-    const { pageItems, totalPages, currentPage } = useMemo(
-        () => paginateSeeds(processedSeeds, page),
-        [processedSeeds, page]
+    const {pageItems, totalPages, currentPage} = useMemo(
+        () => paginateSeeds(seedsWithSupplierNames, page),
+        [seedsWithSupplierNames, page]
     );
 
-    function handleFilterChange(field) {
-        return (e) => {
-            setFilters((prev) => ({ ...prev, [field]: e.target.value }));
-            setPage(1);
-        };
-    }
+    const selectedSeed = selectedSeedId
+        ? seedsWithSupplierNames.find((seed) => String(seed.seedId) === String(selectedSeedId)) || null
+        : null;
+    const selectedLots = selectedSeed ? lotsBySeed.get(String(selectedSeed.seedId)) || [] : [];
 
-    function handleSearchChange(e) {
-        setSearchText(e.target.value);
+    const hasAppliedFilter = appliedFilter.mode !== '';
+
+    function applyFilter(next) {
+        setAppliedFilter(next);
         setPage(1);
+        setFilterError('');
     }
 
-    function handleClearFilters() {
-        setFilters(SEED_FILTERS_INITIAL_STATE);
-        setSearchText('');
-        setPage(1);
+    function handleModeChange(e) {
+        setDraftMode(e.target.value);
+        setDraftValue('');
+        setFilterError('');
+        if (hasAppliedFilter) applyFilter(SEED_FILTER_INITIAL_STATE);
     }
 
-    const hasActiveFilters =
-        searchText.trim() !== '' ||
-        Object.values(filters).some((value) => value !== '');
+    function handleSelectValueChange(e) {
+        const value = e.target.value;
+        setDraftValue(value);
+        applyFilter(value ? {mode: draftMode, value} : SEED_FILTER_INITIAL_STATE);
+    }
+
+    function handleSubmit(e) {
+        e.preventDefault();
+        const value = draftValue.trim();
+
+        if (draftMode === 'stock') {
+            if (value === '' || Number.isNaN(Number(value)) || Number(value) < 0) {
+                setFilterError('Ingresa un número válido (0 o mayor).');
+                return;
+            }
+        }
+        if (draftMode === 'name' && value === '') {
+            setFilterError('Ingresa el nombre exacto de la semilla.');
+            return;
+        }
+        if (!draftMode) return;
+
+        applyFilter({mode: draftMode, value});
+    }
+
+    function handleClearFilter() {
+        setDraftMode('');
+        setDraftValue('');
+        applyFilter(SEED_FILTER_INITIAL_STATE);
+    }
+
+    function handleRequestDelete(seed) {
+        setDeleteMessage(null);
+        setSeedToDelete(seed);
+    }
+
+    async function handleConfirmDelete() {
+        const seed = seedToDelete;
+        setIsDeleting(true);
+        try {
+            await deleteSeed(seed.seedId);
+            setSeeds((prev) => prev.filter((s) => s.seedId !== seed.seedId));
+            setDeleteMessage({type: 'success', text: `Semilla "${seed.name}" eliminada.`});
+        } catch (err) {
+            setDeleteMessage({
+                type: 'error',
+                text: getApiErrorMessage(err, 'No se pudo eliminar la semilla. Intenta nuevamente.'),
+            });
+        } finally {
+            setIsDeleting(false);
+            setSeedToDelete(null);
+        }
+    }
+
+    function handleSeeLots(seedId) {
+        navigate('/lots', {state: {seedId: String(seedId)}});
+    }
+
+    function renderValueControl() {
+        switch (draftMode) {
+            case 'type':
+                return (
+                    <select
+                        className="seed-select"
+                        aria-label="Tipo"
+                        value={draftValue}
+                        onChange={handleSelectValueChange}
+                    >
+                        <option value="">Selecciona un tipo</option>
+                        {SEED_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                );
+            case 'supplier':
+                return (
+                    <select
+                        className="seed-select"
+                        aria-label="Proveedor"
+                        value={draftValue}
+                        onChange={handleSelectValueChange}
+                    >
+                        <option value="">Selecciona un proveedor</option>
+                        {suppliers.map((supplier) => (
+                            <option key={supplier.supplierId} value={supplier.supplierId}>
+                                {supplier.name}
+                            </option>
+                        ))}
+                    </select>
+                );
+            case 'stock':
+                return (
+                    <>
+                        <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            className="seed-search-input"
+                            placeholder="Ej: 50"
+                            aria-label="Stock menor a"
+                            value={draftValue}
+                            onChange={(e) => setDraftValue(e.target.value)}
+                        />
+                        <button type="submit" className="seed-btn">Aplicar</button>
+                    </>
+                );
+            case 'name':
+                return (
+                    <>
+                        <input
+                            type="search"
+                            className="seed-search-input"
+                            placeholder="Nombre exacto de la semilla"
+                            aria-label="Nombre exacto"
+                            value={draftValue}
+                            onChange={(e) => setDraftValue(e.target.value)}
+                        />
+                        <button type="submit" className="seed-btn">Aplicar</button>
+                    </>
+                );
+            default:
+                return null;
+        }
+    }
 
     if (isLoading) {
-        return <div className="seed-list-loading">Cargando inventario de semillas...</div>;
+        return <div className="seed-list-loading">Cargando catálogo de semillas...</div>;
     }
 
     if (loadError) {
         return <div className="seed-list-message error">{loadError}</div>;
     }
 
-    if (seeds.length === 0) {
+    if (!isFetchingSeeds && !seedsError && !hasAppliedFilter && seeds.length === 0) {
         return (
             <div className="seed-list-empty">
-                <p>No existen semillas registradas en el inventario.</p>
-                <Link to="/seeds/new" className="seed-button primary">
+                <p>No existen semillas registradas en el catálogo.</p>
+                <Link to="/seeds/new" className="seed-btn">
                     Registrar nueva semilla
                 </Link>
             </div>
@@ -108,182 +283,125 @@ function SeedListPage() {
 
     return (
         <div className="seed-list-page">
-            <div className="seed-list-toolbar">
-                <input
-                    type="text"
-                    className="seed-search-input"
-                    placeholder="Buscar por nombre, variedad o proveedor..."
-                    value={searchText}
-                    onChange={handleSearchChange}
-                />
+            <div className="seed-head">
+                <div>
+                    <h1>Semillas</h1>
+                </div>
+                <Link to="/seeds/new" className="seed-btn">
+                    + Registrar semilla
+                </Link>
+            </div>
 
+            <form className="seed-list-toolbar" onSubmit={handleSubmit}>
                 <select
-                    className="seed-sort-select"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    className="seed-select"
+                    aria-label="Filtrar por"
+                    value={draftMode}
+                    onChange={handleModeChange}
                 >
-                    {SORT_OPTIONS.map((option) => (
+                    {SEED_FILTER_MODES.map((option) => (
                         <option key={option.value} value={option.value}>
                             {option.label}
                         </option>
                     ))}
                 </select>
 
-                <button
-                    type="button"
-                    className="seed-button secondary"
-                    onClick={() => setShowFilters((prev) => !prev)}
-                >
-                    Filtros {showFilters ? '▲' : '▼'}
-                </button>
+                {renderValueControl()}
 
-                <Link to="/seeds/new" className="seed-button primary">
-                    + Registrar semilla
-                </Link>
-            </div>
-
-            {showFilters && (
-                <div className="seed-filters-panel">
-                    <label className="seed-field">
-                        <span>Proveedor</span>
-                        <select value={filters.supplierId} onChange={handleFilterChange('supplierId')}>
-                            <option value="">Todos</option>
-                            {suppliers.map((supplier) => (
-                                <option key={supplier.id} value={supplier.id}>
-                                    {supplier.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Estado de stock</span>
-                        <select value={filters.stockStatus} onChange={handleFilterChange('stockStatus')}>
-                            <option value="">Todos</option>
-                            <option value="available">Disponible</option>
-                            <option value="out_of_stock">Agotado</option>
-                        </select>
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Adquisición desde</span>
-                        <input
-                            type="date"
-                            value={filters.acquisitionFrom}
-                            onChange={handleFilterChange('acquisitionFrom')}
-                        />
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Adquisición hasta</span>
-                        <input
-                            type="date"
-                            value={filters.acquisitionTo}
-                            onChange={handleFilterChange('acquisitionTo')}
-                        />
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Vencimiento desde</span>
-                        <input
-                            type="date"
-                            value={filters.expirationFrom}
-                            onChange={handleFilterChange('expirationFrom')}
-                        />
-                    </label>
-
-                    <label className="seed-field">
-                        <span>Vencimiento hasta</span>
-                        <input
-                            type="date"
-                            value={filters.expirationTo}
-                            onChange={handleFilterChange('expirationTo')}
-                        />
-                    </label>
-
-                    <button type="button" className="seed-button secondary" onClick={handleClearFilters}>
-                        Limpiar filtros
+                {(hasAppliedFilter || draftMode !== '') && (
+                    <button type="button" className="seed-btn ghost" onClick={handleClearFilter}>
+                        Limpiar filtro
                     </button>
+                )}
+            </form>
+
+            {filterError && <div className="seed-list-message error">{filterError}</div>}
+
+            {deleteMessage && (
+                <div className={`seed-list-message ${deleteMessage.type}`} role="status">
+                    {deleteMessage.text}
                 </div>
             )}
 
-            {processedSeeds.length === 0 ? (
+            {isFetchingSeeds ? (
+                <div className="seed-list-loading">Cargando semillas...</div>
+            ) : seedsError ? (
+                <div className="seed-list-message error">{seedsError}</div>
+            ) : seeds.length === 0 ? (
                 <div className="seed-list-message">
-                    No se encontraron semillas con los criterios especificados.
-                    {hasActiveFilters && (
-                        <button type="button" className="seed-link-button" onClick={handleClearFilters}>
-                            Limpiar búsqueda y filtros
-                        </button>
-                    )}
+                    No hay semillas con ese filtro.
+                    <button type="button" className="seed-link" onClick={handleClearFilter}>
+                        Limpiar filtro
+                    </button>
                 </div>
             ) : (
                 <>
-                    <div className="seed-table-wrapper">
-                        <table className="seed-table">
-                            <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
-                                <th>Proveedor</th>
-                                <th>Cantidad</th>
-                                <th>F. adquisición</th>
-                                <th>F. vencimiento</th>
-                                <th>Acciones</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {pageItems.map((seed) => (
-                                <tr key={seed.id}>
-                                    <td>{seed.name}</td>
-                                    <td>{SEED_TYPE_LABELS[seed.type] || seed.type}</td>
-                                    <td>{seed.supplierName || '—'}</td>
-                                    <td>
-                                            <span
-                                                className={`stock-badge ${
-                                                    Number(seed.quantity) > 0 ? 'available' : 'out'
-                                                }`}
-                                            >
-                                                {seed.quantity}
-                                            </span>
-                                    </td>
-                                    <td>{formatDate(seed.acquisitionDate)}</td>
-                                    <td>{formatDate(seed.expirationDate)}</td>
-                                    <td>
-                                        <Link to={`/seeds/${seed.id}/edit`} className="seed-action-link">
-                                            Editar
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <section className="seed-grid" aria-live="polite">
+                        {pageItems.map((seed) => {
+                            const seedLots = lotsBySeed.get(String(seed.seedId)) || [];
+                            return (
+                                <SeedCard
+                                    key={seed.seedId}
+                                    seed={seed}
+                                    typeLabel={SEED_TYPE_LABELS[seed.type] || seed.type}
+                                    stock={sumStock(seedLots)}
+                                    lotCount={seedLots.length}
+                                    lotsLoaded={lotsLoaded}
+                                    onSelect={setSelectedSeedId}
+                                    onDelete={handleRequestDelete}
+                                />
+                            );
+                        })}
+                    </section>
 
-                    <div className="seed-pagination">
+                    <nav className="seed-pagination" aria-label="Paginación">
                         <button
                             type="button"
-                            className="seed-button secondary"
+                            className="seed-btn ghost"
                             disabled={currentPage === 1}
                             onClick={() => setPage((prev) => prev - 1)}
                         >
                             Anterior
                         </button>
                         <span>
-                            Página {currentPage} de {totalPages}
+                            {seeds.length} {seeds.length === 1 ? 'semilla' : 'semillas'} · Página {currentPage} de{' '}
+                            {totalPages}
                         </span>
                         <button
                             type="button"
-                            className="seed-button secondary"
+                            className="seed-btn ghost"
                             disabled={currentPage === totalPages}
                             onClick={() => setPage((prev) => prev + 1)}
                         >
                             Siguiente
                         </button>
-                    </div>
+                    </nav>
                 </>
+            )}
+
+            <SeedDetailModal
+                seed={selectedSeed}
+                typeLabel={selectedSeed ? SEED_TYPE_LABELS[selectedSeed.type] || selectedSeed.type : ''}
+                lots={selectedLots}
+                stock={sumStock(selectedLots)}
+                lotsLoaded={lotsLoaded}
+                onSeeLots={handleSeeLots}
+                onClose={() => setSelectedSeedId(null)}
+            />
+
+            {seedToDelete && (
+                <ConfirmDialog
+                    title="Eliminar semilla"
+                    message="¿Seguro que desea eliminar esta semilla? Se borrará definitivamente del catálogo."
+                    details={seedToDelete.name}
+                    confirmLabel="Eliminar"
+                    isConfirming={isDeleting}
+                    onConfirm={handleConfirmDelete}
+                    onCancel={() => setSeedToDelete(null)}
+                />
             )}
         </div>
     );
-}
+};
 
 export default SeedListPage;

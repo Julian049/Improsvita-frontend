@@ -1,20 +1,49 @@
 import { NavLink } from 'react-router-dom';
+import './Sidebar.css';
+
+const MAIN_LINKS = [
+    { to: '/', label: 'Panel principal', end: true },
+    { to: '/seeds', label: 'Semillas' },
+    { to: '/lots', label: 'Lotes' },
+    // { to: '/seedlings', label: 'Plántulas' },
+    { to: '/sowings', label: 'Siembras' },
+];
+
+const SECONDARY_LINKS = [
+    // { to: '/reservations', label: 'Reservas' },
+    // { to: '/sales', label: 'Ventas' },
+    { to: '/suppliers', label: 'Contactos' },
+    { to: '/locations', label: 'Ubicaciones' },
+    { to: '/beds', label: 'Camas' },
+];
+
+function SidebarLink({ to, label, end }) {
+    return (
+        <NavLink
+            to={to}
+            end={end}
+            className={({ isActive }) => `app-sidebar-link ${isActive ? 'on' : ''}`}
+        >
+            {label}
+        </NavLink>
+    );
+}
 
 function Sidebar() {
     return (
-        <aside className="sidebar">
-            <div className="logo">
-                Improsvita
-            </div>
+        <aside className="app-sidebar">
+            <div className="app-sidebar-brand">Improsvita</div>
 
-            <nav>
-                <NavLink to="/">Panel principal</NavLink>
-                <NavLink to="/seeds">Semillas</NavLink>
-                <NavLink to="/plantings">Siembras</NavLink>
-                <NavLink to="/seedlings">Plántulas</NavLink>
-                <NavLink to="/suppliers">Contactos</NavLink>
-                <NavLink to="/reservations">Reservas</NavLink>
-                <NavLink to="/sales">Ventas</NavLink>
+            <nav className="app-sidebar-nav" aria-label="Navegación principal">
+                {MAIN_LINKS.map((link) => (
+                    <SidebarLink key={link.to} {...link} />
+                ))}
+
+                <div className="app-sidebar-sep" role="separator" />
+
+                {SECONDARY_LINKS.map((link) => (
+                    <SidebarLink key={link.to} {...link} />
+                ))}
             </nav>
         </aside>
     );

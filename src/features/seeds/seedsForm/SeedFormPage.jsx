@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-    createSeed,
-    getSeedById,
-    getSuppliers,
-    updateSeed,
-} from '../seedApi.js';
+import { createSeed, getSeedById, updateSeed } from '../seedApi.js';
+import { getSuppliers } from '../../suppliers/supplierApi.js';
+import { getApiErrorMessage } from '../../../api/apiError.js';
 import {
     FIELD_LABELS,
     SEED_FORM_INITIAL_VALUES,
@@ -22,6 +19,7 @@ function SeedFormPage() {
     const [values, setValues] = useState(SEED_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
     const [suppliers, setSuppliers] = useState([]);
+    const [blockedSupplierIds, setBlockedSupplierIds] = useState([]);
     const [isLoading, setIsLoading] = useState(isEditing);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState(null);
@@ -40,11 +38,10 @@ function SeedFormPage() {
                 setValues({
                     name: seed.name || '',
                     type: seed.type || '',
-                    supplierId: seed.supplierId ? String(seed.supplierId) : '',
-                    quantity: seed.quantity ? String(seed.quantity) : '',
-                    acquisitionDate: seed.acquisitionDate || '',
-                    expirationDate: seed.expirationDate || '',
+                    description: seed.description || '',
+                    supplierIds: seed.supplierIds.map(String),
                 });
+                setBlockedSupplierIds(seed.blockedSupplierIds.map(String));
             })
             .catch(() => {
                 setSubmitMessage({
@@ -62,11 +59,22 @@ function SeedFormPage() {
         };
     }
 
+    function handleSupplierToggle(supplierId) {
+        const key = String(supplierId);
+        setValues((prev) => ({
+            ...prev,
+            supplierIds: prev.supplierIds.includes(key)
+                ? prev.supplierIds.filter((s) => s !== key)
+                : [...prev.supplierIds, key],
+        }));
+        setErrors((prev) => ({ ...prev, supplierIds: undefined }));
+    }
+
     async function handleSubmit(e) {
         e.preventDefault();
         setSubmitMessage(null);
 
-        const validationErrors = validateSeedForm(values, isEditing);
+        const validationErrors = validateSeedForm(values);
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
@@ -83,16 +91,15 @@ function SeedFormPage() {
         const payload = {
             name: values.name.trim(),
             type: values.type,
-            supplierId: values.supplierId,
-            quantity: Number(values.quantity),
-            acquisitionDate: values.acquisitionDate,
-            expirationDate: values.expirationDate || null,
+            description: values.description.trim(),
+            supplierIds: values.supplierIds,
         };
 
         setIsSubmitting(true);
         try {
             if (isEditing) {
-                await updateSeed(id, payload);
+                const updated = await updateSeed(id, payload);
+                setBlockedSupplierIds(updated.blockedSupplierIds.map(String));
                 setSubmitMessage({ type: 'success', text: 'Semilla modificada exitosamente.' });
             } else {
                 await createSeed(payload);
@@ -102,9 +109,7 @@ function SeedFormPage() {
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
-                text:
-                    err.response?.data?.message ||
-                    'No se pudo guardar la semilla. Intenta nuevamente.',
+                text: getApiErrorMessage(err, 'No se pudo guardar la semilla. Intenta nuevamente.'),
             });
         } finally {
             setIsSubmitting(false);
@@ -121,8 +126,8 @@ function SeedFormPage() {
                 <h2>{isEditing ? 'Modificar semilla' : 'Registrar semilla'}</h2>
                 <p className="seed-form-subtitle">
                     {isEditing
-                        ? 'Actualiza la información de esta semilla en el inventario.'
-                        : 'Completa los datos para agregar una nueva semilla al inventario.'}
+                        ? 'Actualiza la información de esta semilla del catálogo.'
+                        : 'Registra una semilla en el catálogo. Las cantidades y fechas se manejan por lote.'}
                 </p>
 
                 <form onSubmit={handleSubmit} className="seed-form" noValidate>
@@ -153,60 +158,44 @@ function SeedFormPage() {
                         </label>
                     </div>
 
-                    <div className="seed-form-row">
-                        <label className="seed-field">
-                            <span>Proveedor *</span>
-                            <select value={values.supplierId} onChange={handleChange('supplierId')}>
-                                <option value="">Selecciona un proveedor</option>
-                                {suppliers.map((supplier) => (
-                                    <option key={supplier.id} value={supplier.id}>
+                    <label className="seed-field">
+                        <span>Descripción (opcional)</span>
+                        <textarea
+                            maxLength={255}
+                            value={values.description}
+                            onChange={handleChange('description')}
+                            placeholder="Variedad, características, observaciones..."
+                        />
+                        {errors.description && (
+                            <small className="field-error">{errors.description}</small>
+                        )}
+                    </label>
+
+                    <div className="seed-field">
+                        <span>Proveedores (opcional)</span>
+                        <div className="seed-checkbox-group">
+                            {suppliers.length === 0 && <small>No hay proveedores disponibles.</small>}
+                            {suppliers.map((supplier) => {
+                                const key = String(supplier.supplierId);
+                                const isBlocked = blockedSupplierIds.includes(key);
+                                return (
+                                    <label key={key} className="seed-checkbox-option">
+                                        <input
+                                            type="checkbox"
+                                            checked={values.supplierIds.includes(key)}
+                                            disabled={isBlocked}
+                                            onChange={() => handleSupplierToggle(supplier.supplierId)}
+                                        />
                                         {supplier.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.supplierId && (
-                                <small className="field-error">{errors.supplierId}</small>
-                            )}
-                        </label>
-
-                        <label className="seed-field">
-                            <span>Cantidad adquirida *</span>
-                            <input
-                                type="number"
-                                min="1"
-                                step="1"
-                                value={values.quantity}
-                                onChange={handleChange('quantity')}
-                                placeholder="Ej. 100"
-                            />
-                            {errors.quantity && <small className="field-error">{errors.quantity}</small>}
-                        </label>
-                    </div>
-
-                    <div className="seed-form-row">
-                        <label className="seed-field">
-                            <span>Fecha de adquisición *</span>
-                            <input
-                                type="date"
-                                value={values.acquisitionDate}
-                                onChange={handleChange('acquisitionDate')}
-                            />
-                            {errors.acquisitionDate && (
-                                <small className="field-error">{errors.acquisitionDate}</small>
-                            )}
-                        </label>
-
-                        <label className="seed-field">
-                            <span>Fecha de vencimiento {isEditing ? '*' : '(opcional)'}</span>
-                            <input
-                                type="date"
-                                value={values.expirationDate}
-                                onChange={handleChange('expirationDate')}
-                            />
-                            {errors.expirationDate && (
-                                <small className="field-error">{errors.expirationDate}</small>
-                            )}
-                        </label>
+                                        {isBlocked && ' (desvinculado, no se puede volver a vincular)'}
+                                    </label>
+                                );
+                            })}
+                        </div>
+                        <small>Solo los proveedores vinculados podrán registrar lotes de esta semilla.</small>
+                        {errors.supplierIds && (
+                            <small className="field-error">{errors.supplierIds}</small>
+                        )}
                     </div>
 
                     {submitMessage && (
