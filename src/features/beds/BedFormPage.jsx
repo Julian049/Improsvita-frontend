@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import { createBed, getBedByCode, getBedById, updateBed } from './bedApi';
 import { getApiErrorMessage } from '../../api/apiError';
 import { BED_FIELD_LABELS, BED_FORM_INITIAL_VALUES, validateBedForm } from './bedValidation';
@@ -9,6 +10,7 @@ function BedFormPage() {
     const { id } = useParams();
     const isEditing = Boolean(id);
     const navigate = useNavigate();
+    const goBack = useGoBack('/beds');
 
     const [values, setValues] = useState(BED_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
@@ -64,14 +66,8 @@ function BedFormPage() {
                 return;
             }
 
-            if (isEditing) {
-                await updateBed(id, values);
-                setSubmitMessage({ type: 'success', text: 'Cama modificada exitosamente.' });
-            } else {
-                await createBed(values);
-                setSubmitMessage({ type: 'success', text: 'Cama registrada exitosamente.' });
-                setValues(BED_FORM_INITIAL_VALUES);
-            }
+            await (isEditing ? updateBed(id, values) : createBed(values));
+            goBack();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',

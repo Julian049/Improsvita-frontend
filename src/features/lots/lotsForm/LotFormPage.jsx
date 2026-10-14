@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../../hooks/useGoBack';
 import { createLot } from '../lotApi.js';
 import { getAllSeeds, getActiveSupplierIdsBySeed } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
@@ -18,6 +19,7 @@ const labelFor = (field) => `${LOT_FIELD_LABELS[field]}${isRequired(field) ? ' *
 
 function LotFormPage() {
     const navigate = useNavigate();
+    const goBack = useGoBack('/lots');
 
     const [values, setValues] = useState(LOT_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
@@ -97,14 +99,8 @@ function LotFormPage() {
 
         setIsSubmitting(true);
         try {
-            const lot = await createLot(values);
-            setSubmitMessage({
-                type: 'success',
-                text: `Lote ${lot.lotNumber} registrado exitosamente.`,
-            });
-            currentSeedRef.current = '';
-            setValues(LOT_FORM_INITIAL_VALUES);
-            setLinkedSupplierIds([]);
+            await createLot(values);
+            goBack();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import { createSupplier, getSuppliers } from './supplierApi';
 import { getApiErrorMessage } from '../../api/apiError';
 import {
@@ -11,6 +12,7 @@ import './SupplierForm.css';
 
 function SupplierFormPage() {
     const navigate = useNavigate();
+    const goBack = useGoBack('/suppliers');
 
     const [values, setValues] = useState(SUPPLIER_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
@@ -62,8 +64,7 @@ function SupplierFormPage() {
             }
 
             await createSupplier(payload);
-            setSubmitMessage({ type: 'success', text: 'Proveedor registrado exitosamente.' });
-            setValues(SUPPLIER_FORM_INITIAL_VALUES);
+            goBack();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
