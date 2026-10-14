@@ -100,3 +100,15 @@ body {
   background: #fdecea;
   border-color: #f5c6c2;
 }
+
+/* Quita las flechas +/- del input numérico (Chrome/Edge/Safari y Firefox). */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.no-spinner {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}

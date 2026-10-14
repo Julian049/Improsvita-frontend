@@ -210,6 +210,7 @@ function LotFormPage() {
                                 type="number"
                                 min="1"
                                 step="1"
+                                className="no-spinner"
                                 value={values.lotNumber}
                                 onChange={handleChange('lotNumber')}
                                 placeholder="Ej. 101"
@@ -228,6 +229,7 @@ function LotFormPage() {
                                 min="1"
                                 step="1"
                                 inputMode="numeric"
+                                className="no-spinner"
                                 value={values.quantity}
                                 onChange={handleChange('quantity')}
                                 placeholder="Ej. 100"
@@ -243,6 +245,7 @@ function LotFormPage() {
                                 max="100"
                                 step="1"
                                 inputMode="numeric"
+                                className="no-spinner"
                                 value={values.germinationPercentage}
                                 onChange={handleChange('germinationPercentage')}
                                 placeholder="Ej. 85"

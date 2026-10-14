@@ -234,7 +234,7 @@ export const SeedListPage = () => {
                             type="number"
                             min="0"
                             step="any"
-                            className="seed-search-input"
+                            className="seed-search-input no-spinner"
                             placeholder="Ej: 50"
                             aria-label="Stock menor a"
                             value={draftValue}

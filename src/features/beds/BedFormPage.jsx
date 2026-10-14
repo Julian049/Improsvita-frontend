@@ -111,6 +111,7 @@ function BedFormPage() {
                             type="number"
                             min="0"
                             step="any"
+                            className="no-spinner"
                             value={values.maxCapacity}
                             onChange={handleChange('maxCapacity')}
                             placeholder="Ej. 2000"
