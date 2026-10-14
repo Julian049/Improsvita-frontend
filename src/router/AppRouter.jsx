@@ -7,6 +7,7 @@ import SeedFormPage from '../features/seeds/seedsForm/SeedFormPage.jsx';
 import SeedListPage from '../features/seeds/seedsList/SeedListPage.jsx';
 import LotFormPage from '../features/lots/lotsForm/LotFormPage.jsx';
 import LotListPage from '../features/lots/lotsList/LotListPage.jsx';
+import DashboardPage from '../features/dashboard/DashboardPage.jsx';
 import LotTracePage from '../features/lots/lotTrace/LotTracePage.jsx';
 import SupplierListPage from '../features/suppliers/SupplierListPage';
 import SupplierFormPage from '../features/suppliers/SupplierFormPage';
@@ -17,10 +18,6 @@ import LocationFormPage from '../features/locations/LocationFormPage.jsx';
 import BedListPage from '../features/beds/BedListPage.jsx';
 import BedFormPage from '../features/beds/BedFormPage.jsx';
 
-function Dashboard() {
-    return <h1>Panel principal</h1>;
-}
-
 function AppRouter() {
     return (
         <BrowserRouter>
@@ -30,7 +27,7 @@ function AppRouter() {
 
                 {/*<Route element={<ProtectedRoute />}>*/}
                     <Route path="/" element={<MainLayout />}>
-                        <Route index element={<Dashboard />} />
+                        <Route index element={<DashboardPage />} />
 
                         <Route path="seeds" element={<SeedListPage />} />
                         <Route path="seeds/new" element={<SeedFormPage />} />
