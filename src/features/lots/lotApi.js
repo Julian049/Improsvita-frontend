@@ -109,7 +109,7 @@ function toLotUpdateRequest(payload) {
     };
 }
 
-// Pendiente del backend: aún no existe PUT /inventory/lots/{id}; queda listo para cuando la API lo exponga.
+// SUPUESTO: aún no existe PUT /inventory/lots/{id}; queda listo para cuando la API lo exponga.
 export async function updateLot(id, payload) {
     if (MOCK_CONFIG.lots) {
         await mockDelay();
@@ -129,7 +129,7 @@ export async function updateLot(id, payload) {
     }
 }
 
-// Pendiente del backend: aún no existe PUT /inventory/lots/{id}/status (hoy el estado solo cambia solo con el stock).
+// SUPUESTO: aún no existe PUT /inventory/lots/{id}/status (hoy el estado solo cambia solo con el stock).
 export async function updateLotStatus(id, status) {
     if (MOCK_CONFIG.lots) {
         await mockDelay();

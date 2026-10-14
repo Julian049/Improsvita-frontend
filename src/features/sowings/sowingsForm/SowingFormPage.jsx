@@ -194,7 +194,7 @@ function SowingFormPage() {
         setIsSubmitting(true);
         try {
             const sowing = await createSowing(values);
-            // El POST del backend siempre crea la siembra "En progreso"; el estado elegido se aplica después.
+            // SUPUESTO: el POST del backend siempre crea la siembra "En progreso"; el estado elegido se aplica después.
             if (values.status !== sowing.status) {
                 try {
                     await updateSowingStatus(sowing.sowingId, values.status);
