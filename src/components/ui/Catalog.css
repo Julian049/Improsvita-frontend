@@ -97,6 +97,24 @@
     text-decoration: underline;
 }
 
+/* Acciones como botón (p. ej. Eliminar) con el mismo aspecto que los enlaces. */
+button.catalog-link {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.catalog-actions .catalog-link + .catalog-link {
+    margin-left: 14px;
+}
+
+.catalog-link.danger {
+    color: #b3261e;
+}
+
 /* Formulario */
 
 .catalog-form-card {
@@ -131,15 +149,21 @@
 }
 
 .catalog-field input[type='text'],
-.catalog-field input[type='number'] {
+.catalog-field input[type='number'],
+.catalog-field input[type='date'],
+.catalog-field select,
+.catalog-field textarea {
     padding: 10px 12px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     font-size: 14px;
     font-family: inherit;
+    background: #ffffff;
 }
 
-.catalog-field input:focus {
+.catalog-field input:focus,
+.catalog-field select:focus,
+.catalog-field textarea:focus {
     outline: 2px solid #a7d7ac;
     outline-offset: 1px;
     border-color: #a7d7ac;

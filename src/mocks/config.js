@@ -5,6 +5,8 @@ export const MOCK_CONFIG = {
     locations: false,
     sowings: false,
     beds: false,
+    // SUPUESTO: el backend no tiene plántulas; en true hasta que exista /seedlings.
+    seedlings: true,
 
     delayMs: 300,
 };
