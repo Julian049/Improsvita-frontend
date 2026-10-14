@@ -203,3 +203,14 @@
 .notif-footer-link:hover {
     text-decoration: underline;
 }
+/* En teléfono el panel no cabe anclado a la campana: ocupa el ancho de la pantalla bajo el encabezado. */
+@media (max-width: 640px) {
+    .notif-panel {
+        position: fixed;
+        top: 72px;
+        left: 16px;
+        right: 16px;
+        width: auto;
+        max-width: none;
+    }
+}

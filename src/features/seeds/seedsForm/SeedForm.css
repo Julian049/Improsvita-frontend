@@ -13,6 +13,7 @@
     border-radius: 12px;
     padding: 32px;
     max-width: 720px;
+    margin-inline: auto;
 }
 
 .seed-form-card h2 {
@@ -166,3 +167,12 @@
     color: #374151;
 }
 
+@media (max-width: 640px) {
+    .seed-form-card {
+        padding: 20px;
+    }
+
+    .seed-form-row {
+        flex-direction: column;
+    }
+}

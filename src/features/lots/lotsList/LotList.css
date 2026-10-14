@@ -17,7 +17,8 @@
     flex-direction: column;
     gap: 16px;
     width: 100%;
-    max-width: 1280px;
+    max-width: 1600px;
+    margin-inline: auto;
     color: var(--lot-text);
     font-size: 14px;
     line-height: 1.45;
@@ -419,5 +420,12 @@
 @media (max-width: 900px) {
     .lot-cols {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .lot-search-input {
+        min-width: 0;
+        flex-basis: 100%;
     }
 }

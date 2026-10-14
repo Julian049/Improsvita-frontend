@@ -17,7 +17,8 @@
     flex-direction: column;
     gap: 16px;
     width: 100%;
-    max-width: 1280px;
+    max-width: 1600px;
+    margin-inline: auto;
     color: var(--supplier-text);
     font-size: 14px;
     line-height: 1.45;
