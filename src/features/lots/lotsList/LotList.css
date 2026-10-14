@@ -294,11 +294,6 @@
     color: var(--lot-green);
 }
 
-.lot-badge.expiring {
-    background: var(--lot-amb-bg);
-    color: var(--lot-amb);
-}
-
 .lot-badge.out {
     background: var(--lot-soft);
     color: var(--lot-muted);
@@ -307,16 +302,6 @@
 .lot-badge.expired {
     background: var(--lot-red-bg);
     color: var(--lot-red);
-}
-
-.lot-due-warn {
-    color: var(--lot-amb);
-    font-weight: 600;
-}
-
-.lot-due-bad {
-    color: var(--lot-red);
-    font-weight: 600;
 }
 
 .lot-pagination {
@@ -385,20 +370,6 @@
 .lot-kv b,
 .lot-kv .lot-link {
     font-size: 15px;
-}
-
-.lot-kv b span {
-    display: inline;
-    font-size: inherit;
-    color: inherit;
-}
-
-.lot-kv b .lot-due-warn {
-    color: var(--lot-amb);
-}
-
-.lot-kv b .lot-due-bad {
-    color: var(--lot-red);
 }
 
 .lot-big {
