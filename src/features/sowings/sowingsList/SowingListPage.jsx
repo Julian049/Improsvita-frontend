@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import {
     getAllSowings,
     getSowings,
-    updateSowingGermination,
     updateSowingStatus,
 } from '../sowingApi.js';
 import { getAllLots } from '../../lots/lotApi.js';
@@ -99,6 +98,7 @@ function SowingListPage() {
             return {
                 ...sowing,
                 lotNumber: lot?.lotNumber ?? '',
+                germinationPercentage: lot?.germinationPercentage ?? null,
                 seedName: lot ? seedNameById.get(String(lot.seedId)) ?? '' : '',
                 bedCode: bedById.get(String(sowing.bedId))?.code ?? '',
             };
@@ -152,13 +152,6 @@ function SowingListPage() {
         runUpdate(
             () => updateSowingStatus(sowing.sowingId, nextStatus),
             SOWING_LIST_MESSAGES.statusError
-        );
-    }
-
-    function handleSaveGermination(sowing, quantity) {
-        runUpdate(
-            () => updateSowingGermination(sowing.sowingId, quantity),
-            SOWING_LIST_MESSAGES.germinationError
         );
     }
 
@@ -260,7 +253,6 @@ function SowingListPage() {
                 errorMessage={actionError}
                 onAdvance={handleAdvance}
                 onRequestClose={handleRequestClose}
-                onSaveGermination={handleSaveGermination}
                 onClose={() => setSelectedSowingId(null)}
             />
 

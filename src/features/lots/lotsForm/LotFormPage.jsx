@@ -236,6 +236,27 @@ function LotFormPage() {
                         </label>
 
                         <label className="lot-field">
+                            <span>{labelFor('germinationPercentage')}</span>
+                            <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                step="1"
+                                inputMode="numeric"
+                                value={values.germinationPercentage}
+                                onChange={handleChange('germinationPercentage')}
+                                placeholder="Ej. 85"
+                            />
+                            {errors.germinationPercentage ? (
+                                <small className="field-error">{errors.germinationPercentage}</small>
+                            ) : (
+                                <small>Se usa para estimar la producción de las siembras.</small>
+                            )}
+                        </label>
+                    </div>
+
+                    <div className="lot-form-row">
+                        <label className="lot-field">
                             <span>{labelFor('entryDate')}</span>
                             <input
                                 type="date"

@@ -6,6 +6,7 @@ export const LOT_FIELD_LABELS = {
     locationId: 'Ubicación',
     lotNumber: 'Número de lote',
     quantity: 'Cantidad',
+    germinationPercentage: 'Germinación (%)',
     entryDate: 'Fecha de ingreso',
 };
 
@@ -48,6 +49,13 @@ export function validateLotForm(values) {
         }
     }
 
+    if (!isEmpty(values.germinationPercentage)) {
+        const percent = Number(values.germinationPercentage);
+        if (!Number.isInteger(percent) || percent < 1 || percent > 100) {
+            errors.germinationPercentage = 'La germinación debe ser un entero entre 1 y 100.';
+        }
+    }
+
     if (!isEmpty(values.entryDate)) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -65,5 +73,6 @@ export const LOT_FORM_INITIAL_VALUES = {
     locationId: '',
     lotNumber: '',
     quantity: '',
+    germinationPercentage: '',
     entryDate: '',
 };

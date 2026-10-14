@@ -549,38 +549,6 @@
     margin: 2px 0 0;
 }
 
-.sowing-germination {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 10px;
-}
-
-.sowing-germination label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.sowing-germination input {
-    width: 160px;
-    padding: 9px 12px;
-    border: 1px solid var(--sowing-line);
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 14px;
-    color: inherit;
-}
-
-.sowing-germination input:focus {
-    outline: 2px solid var(--sowing-green-ring);
-    outline-offset: 1px;
-}
-
-.sowing-germination .sowing-inline-error {
-    flex-basis: 100%;
-}
-
 .sowing-inline-error {
     background: var(--sowing-red-bg);
     border: 1px solid var(--sowing-red-line);
