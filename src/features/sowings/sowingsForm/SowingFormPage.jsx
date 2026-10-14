@@ -337,6 +337,7 @@ function SowingFormPage() {
                                     inputMode="numeric"
                                     min="1"
                                     step="1"
+                                    className="no-spinner"
                                     value={values.quantity}
                                     onChange={handleChange('quantity')}
                                     placeholder="Ej. 500"
