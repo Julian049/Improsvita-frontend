@@ -29,7 +29,7 @@ function fromMovementResponse(movement) {
     };
 }
 
-// EntryRequest del backend: entryDate vacía la toma como hoy; dueDate es opcional.
+// EntryRequest del backend: entryDate vacía la toma como hoy. El formulario ya no pide dueDate.
 function toEntryRequest(payload) {
     return {
         seedId: Number(payload.seedId),
@@ -38,7 +38,7 @@ function toEntryRequest(payload) {
         lotNumber: Number(payload.lotNumber),
         quantity: Number(payload.quantity),
         entryDate: payload.entryDate || null,
-        dueDate: payload.dueDate || null,
+        dueDate: null,
     };
 }
 

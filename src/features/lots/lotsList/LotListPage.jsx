@@ -6,7 +6,6 @@ import { getLocations } from '../../locations/locationApi.js';
 import { getSuppliers } from '../../suppliers/supplierApi.js';
 import { LOT_STATUS_LABELS, getLotStatusLabel } from '../lotValidation.js';
 import { formatDate } from '../../../utils/dateUtils.js';
-import { getExpirationStatus } from '../../../utils/expirationStatus.js';
 import { formatQty } from '../../../utils/numberUtils.js';
 import {
     LOT_FILTER_INITIAL_STATE,
@@ -16,32 +15,11 @@ import {
 } from './lotListUtils.js';
 import './LotList.css';
 
+// El color del estado sale del status del backend y del stock, no de la fecha de vencimiento.
 function getLotVariant(lot) {
-    const expiration = getExpirationStatus(lot.dueDate);
-    if (getStockStatus(lot) !== 'available') return { variant: 'out', expiration };
-    if (expiration.level === 'expired') return { variant: 'expired', expiration };
-    if (expiration.level === 'critical' || expiration.level === 'warning') {
-        return { variant: 'expiring', expiration };
-    }
-    return { variant: 'available', expiration };
-}
-
-function DueDate({ lot, variant, expiration }) {
-    if (variant === 'expired') {
-        return (
-            <span className="lot-due-bad">
-                {formatDate(lot.dueDate)} · {expiration.label}
-            </span>
-        );
-    }
-    if (variant === 'expiring') {
-        return (
-            <span className="lot-due-warn">
-                {formatDate(lot.dueDate)} · {expiration.label}
-            </span>
-        );
-    }
-    return <span>{formatDate(lot.dueDate)}</span>;
+    if (lot.status === 'EXPIRED') return 'expired';
+    if (getStockStatus(lot) !== 'available') return 'out';
+    return 'available';
 }
 
 const MOVEMENT_TYPE_LABELS = {
@@ -89,7 +67,7 @@ function useLotMovements(lotId) {
 }
 
 function LotDetail({ lot, onBack, onSeeSeedLots }) {
-    const { variant, expiration } = getLotVariant(lot);
+    const variant = getLotVariant(lot);
     const initial = Number(lot.initialQuantity) || 0;
     const available = Number(lot.availableQuantity) || 0;
     const used = Math.max(initial - available, 0);
@@ -143,12 +121,6 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
                             <div>
                                 <span>Fecha de ingreso</span>
                                 <b>{formatDate(lot.entryDate)}</b>
-                            </div>
-                            <div>
-                                <span>Fecha de vencimiento</span>
-                                <b>
-                                    <DueDate lot={lot} variant={variant} expiration={expiration} />
-                                </b>
                             </div>
                         </div>
                     </section>
@@ -485,14 +457,13 @@ function LotListPage() {
                                 <th>Semilla</th>
                                 <th>Ubicación</th>
                                 <th>Ingreso</th>
-                                <th>Vencimiento</th>
                                 <th>Disponible</th>
                                 <th>Estado</th>
                             </tr>
                             </thead>
                             <tbody>
                             {pageItems.map((lot) => {
-                                const { variant, expiration } = getLotVariant(lot);
+                                const variant = getLotVariant(lot);
                                 const initial = Number(lot.initialQuantity) || 0;
                                 const available = Number(lot.availableQuantity) || 0;
                                 const ratio = initial > 0 ? Math.min(available / initial, 1) : 0;
@@ -524,9 +495,6 @@ function LotListPage() {
                                         </td>
                                         <td>{lot.locationName || '—'}</td>
                                         <td>{formatDate(lot.entryDate)}</td>
-                                        <td>
-                                            <DueDate lot={lot} variant={variant} expiration={expiration} />
-                                        </td>
                                         <td className="lot-qty">
                                             <b>{formatQty(available)}</b>{' '}
                                             <small>de {formatQty(initial)}</small>

@@ -7,10 +7,9 @@ export const LOT_FIELD_LABELS = {
     lotNumber: 'Número de lote',
     quantity: 'Cantidad',
     entryDate: 'Fecha de ingreso',
-    dueDate: 'Fecha de vencimiento',
 };
 
-// Campos sin los que POST /inventory/entries falla; las fechas son opcionales.
+// Campos sin los que POST /inventory/entries falla; la fecha de ingreso es opcional.
 export const LOT_REQUIRED_FIELDS = ['seedId', 'supplierId', 'locationId', 'lotNumber', 'quantity'];
 
 export const LOT_STATUS_LABELS = {
@@ -44,8 +43,8 @@ export function validateLotForm(values) {
 
     if (!isEmpty(values.quantity)) {
         const quantity = Number(values.quantity);
-        if (Number.isNaN(quantity) || quantity <= 0) {
-            errors.quantity = 'La cantidad debe ser un número válido y mayor que cero.';
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+            errors.quantity = 'La cantidad debe ser un número entero mayor que cero.';
         }
     }
 
@@ -54,12 +53,6 @@ export function validateLotForm(values) {
         today.setHours(0, 0, 0, 0);
         if (toLocalDate(values.entryDate) > today) {
             errors.entryDate = 'La fecha de ingreso no puede ser mayor a la actual.';
-        }
-    }
-
-    if (!isEmpty(values.dueDate) && !isEmpty(values.entryDate)) {
-        if (toLocalDate(values.dueDate) < toLocalDate(values.entryDate)) {
-            errors.dueDate = 'La fecha de vencimiento no puede ser menor a la fecha de ingreso.';
         }
     }
 
@@ -73,5 +66,4 @@ export const LOT_FORM_INITIAL_VALUES = {
     lotNumber: '',
     quantity: '',
     entryDate: '',
-    dueDate: '',
 };
