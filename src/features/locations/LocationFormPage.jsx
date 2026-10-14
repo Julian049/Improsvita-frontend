@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import { createLocation, getLocationById, updateLocation } from './locationApi';
 import { getApiErrorMessage } from '../../api/apiError';
 import {
@@ -13,6 +14,7 @@ function LocationFormPage() {
     const { id } = useParams();
     const isEditing = Boolean(id);
     const navigate = useNavigate();
+    const goBack = useGoBack('/locations');
 
     const [values, setValues] = useState(LOCATION_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
@@ -47,14 +49,8 @@ function LocationFormPage() {
 
         setIsSubmitting(true);
         try {
-            if (isEditing) {
-                await updateLocation(id, values);
-                setSubmitMessage({ type: 'success', text: 'Ubicación modificada exitosamente.' });
-            } else {
-                await createLocation(values);
-                setSubmitMessage({ type: 'success', text: 'Ubicación registrada exitosamente.' });
-                setValues(LOCATION_FORM_INITIAL_VALUES);
-            }
+            await (isEditing ? updateLocation(id, values) : createLocation(values));
+            goBack();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../../hooks/useGoBack';
 import { createSowing, getSowings, updateSowingStatus } from '../sowingApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLots } from '../../lots/lotApi.js';
@@ -50,6 +51,7 @@ function Field({ label, required, error, hint, children }) {
 
 function SowingFormPage() {
     const navigate = useNavigate();
+    const goBack = useGoBack('/sowings');
 
     const [values, setValues] = useState(SOWING_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
@@ -192,18 +194,23 @@ function SowingFormPage() {
         setIsSubmitting(true);
         try {
             const sowing = await createSowing(values);
-            const text = `${SOWING_MESSAGES.success} Siembra n.° ${sowing.sowingId}: se descontaron ${formatQty(sowing.quantitySown)} semillas del lote ${selectedLot.lotNumber}.`;
             // El POST del backend siempre crea la siembra "En progreso"; el estado elegido se aplica después.
-            let statusWarning = '';
             if (values.status !== sowing.status) {
                 try {
                     await updateSowingStatus(sowing.sowingId, values.status);
                 } catch {
-                    statusWarning = ` No se pudo asignar el estado "${getSowingStatusLabel(values.status)}"; cámbialo desde el listado.`;
+                    // La siembra ya existe: se queda en el formulario avisando, para que no se registre dos veces.
+                    setSubmitMessage({
+                        type: 'error',
+                        text: `${SOWING_MESSAGES.success} Siembra n.° ${sowing.sowingId}, pero no se pudo asignar el estado "${getSowingStatusLabel(values.status)}"; cámbialo desde el listado.`,
+                    });
+                    setValues(SOWING_FORM_INITIAL_VALUES);
+                    resetBed();
+                    refreshLots();
+                    return;
                 }
             }
-            setSubmitMessage({ type: statusWarning ? 'error' : 'success', text: text + statusWarning });
-            setValues(SOWING_FORM_INITIAL_VALUES);
+            goBack();
             resetBed();
             refreshLots();
         } catch (err) {

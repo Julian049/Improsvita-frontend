@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useGoBack } from '../../../hooks/useGoBack';
 import { createSeed, getSeedById, updateSeed } from '../seedApi.js';
 import { getSuppliers } from '../../suppliers/supplierApi.js';
 import { getApiErrorMessage } from '../../../api/apiError.js';
@@ -15,6 +16,7 @@ function SeedFormPage() {
     const { id } = useParams();
     const isEditing = Boolean(id);
     const navigate = useNavigate();
+    const goBack = useGoBack('/seeds');
 
     const [values, setValues] = useState(SEED_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
@@ -97,15 +99,8 @@ function SeedFormPage() {
 
         setIsSubmitting(true);
         try {
-            if (isEditing) {
-                const updated = await updateSeed(id, payload);
-                setBlockedSupplierIds(updated.blockedSupplierIds.map(String));
-                setSubmitMessage({ type: 'success', text: 'Semilla modificada exitosamente.' });
-            } else {
-                await createSeed(payload);
-                setSubmitMessage({ type: 'success', text: 'Semilla registrada exitosamente.' });
-                setValues(SEED_FORM_INITIAL_VALUES);
-            }
+            await (isEditing ? updateSeed(id, payload) : createSeed(payload));
+            goBack();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
