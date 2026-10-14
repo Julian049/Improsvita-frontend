@@ -1,9 +1,9 @@
 import { formatDate } from '../../../utils/dateUtils';
 import { formatQty } from '../../../utils/numberUtils';
-import { getGerminationPercent, getGerminationTiming } from './sowingListUtils';
+import { getEstimatedProduction, getGerminationTiming } from './sowingListUtils';
 
 export const SowingCard = ({ sowing, onSelect }) => {
-    const percent = getGerminationPercent(sowing);
+    const estimated = getEstimatedProduction(sowing);
     const timing = getGerminationTiming(sowing);
 
     function handleClick(e) {
@@ -33,8 +33,8 @@ export const SowingCard = ({ sowing, onSelect }) => {
             </div>
 
             <div className="sowing-r2">
-                <div className="sowing-ring" style={{ '--p': percent }}>
-                    <b>{percent}%</b>
+                <div className="sowing-ring" style={{ '--p': sowing.germinationPercentage ?? 0 }}>
+                    <b>{sowing.germinationPercentage == null ? '—' : `${sowing.germinationPercentage}%`}</b>
                 </div>
                 <div className="sowing-nums">
                     <div>
@@ -42,8 +42,8 @@ export const SowingCard = ({ sowing, onSelect }) => {
                         <b>{formatQty(sowing.quantitySown)}</b>
                     </div>
                     <div>
-                        <span>Germinadas</span>
-                        <b>{formatQty(sowing.germinatedQuantity)}</b>
+                        <span>Prod. estimada</span>
+                        <b>{estimated == null ? '—' : formatQty(estimated)}</b>
                     </div>
                 </div>
             </div>

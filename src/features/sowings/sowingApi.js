@@ -22,8 +22,6 @@ function fromSowingResponse(sowing) {
         lotId: sowing.lotId,
         bedId: sowing.bedId,
         quantitySown: Number(sowing.quantitySown) || 0,
-        germinatedQuantity: Number(sowing.germinatedQuantity) || 0,
-        germinationRate: sowing.germinationRate == null ? null : Number(sowing.germinationRate),
         sowingDate: toDateOnly(sowing.sowingDate),
         expectedGerminationDate: toDateOnly(sowing.expectedGerminationDate),
         status: sowing.status,
@@ -51,12 +49,5 @@ export async function createSowing(payload) {
 
 export async function updateSowingStatus(id, status) {
     const { data } = await axiosClient.put(`/sowings/${id}/status`, { status });
-    return fromSowingResponse(data);
-}
-
-export async function updateSowingGermination(id, germinatedQuantity) {
-    const { data } = await axiosClient.put(`/sowings/${id}/germination`, {
-        germinatedQuantity: Number(germinatedQuantity),
-    });
     return fromSowingResponse(data);
 }

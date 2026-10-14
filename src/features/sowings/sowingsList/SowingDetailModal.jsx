@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { formatDate } from '../../../utils/dateUtils';
 import { formatQty } from '../../../utils/numberUtils';
 import {
@@ -9,52 +9,7 @@ import {
     getStatusIndex,
     isTerminalStatus,
 } from '../sowingStatus';
-import { getGerminationPercent } from './sowingListUtils';
-
-function GerminationForm({ sowing, isUpdating, onSave }) {
-    const [value, setValue] = useState(String(sowing.germinatedQuantity));
-    const [error, setError] = useState(null);
-
-    function handleSubmit(e) {
-        e.preventDefault();
-        const quantity = Number(value);
-        if (value.trim() === '' || Number.isNaN(quantity) || quantity < 0) {
-            setError('Ingresa una cantidad válida (0 o mayor).');
-            return;
-        }
-        if (quantity > sowing.quantitySown) {
-            setError(`No puede superar lo sembrado (${formatQty(sowing.quantitySown)}).`);
-            return;
-        }
-        setError(null);
-        onSave(sowing, quantity);
-    }
-
-    return (
-        <form className="sowing-germination" onSubmit={handleSubmit} noValidate>
-            <label>
-                <span className="sowing-hint">Semillas germinadas</span>
-                <input
-                    type="number"
-                    min="0"
-                    max={sowing.quantitySown}
-                    step="1"
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    aria-invalid={Boolean(error)}
-                />
-            </label>
-            <button type="submit" className="sowing-gh" disabled={isUpdating}>
-                Guardar germinación
-            </button>
-            {error && (
-                <small className="sowing-inline-error" role="alert">
-                    {error}
-                </small>
-            )}
-        </form>
-    );
-}
+import { getEstimatedProduction } from './sowingListUtils';
 
 export const SowingDetailModal = ({
                                         sowing,
@@ -63,7 +18,6 @@ export const SowingDetailModal = ({
                                         onAdvance,
                                         onClose,
                                         onRequestClose,
-                                        onSaveGermination,
                                     }) => {
     const dialogRef = useRef(null);
 
@@ -76,7 +30,7 @@ export const SowingDetailModal = ({
 
     const nextStatus = sowing ? getNextStatus(sowing.status) : null;
     const statusIndex = sowing ? getStatusIndex(sowing.status) : -1;
-    const percent = sowing ? getGerminationPercent(sowing) : 0;
+    const estimated = sowing ? getEstimatedProduction(sowing) : null;
     const isTerminal = sowing ? isTerminalStatus(sowing.status) : false;
 
     return (
@@ -105,8 +59,8 @@ export const SowingDetailModal = ({
 
                     <div className="sowing-dialog-body">
                         <div className="sowing-hero">
-                            <div className="sowing-ring large" style={{ '--p': percent }}>
-                                <b>{percent}%</b>
+                            <div className="sowing-ring large" style={{ '--p': sowing.germinationPercentage ?? 0 }}>
+                                <b>{sowing.germinationPercentage == null ? '—' : `${sowing.germinationPercentage}%`}</b>
                             </div>
                             <div className="sowing-dk">
                                 <div>
@@ -114,8 +68,8 @@ export const SowingDetailModal = ({
                                     <b>{formatQty(sowing.quantitySown)}</b>
                                 </div>
                                 <div>
-                                    <span>Germinadas</span>
-                                    <b>{formatQty(sowing.germinatedQuantity)}</b>
+                                    <span>Producción estimada</span>
+                                    <b>{estimated == null ? 'Sin % de germinación' : `${formatQty(estimated)} plántulas`}</b>
                                 </div>
                                 <div>
                                     <span>Lote</span>
@@ -149,13 +103,6 @@ export const SowingDetailModal = ({
                                 ))}
                             </ol>
                         )}
-
-                        <GerminationForm
-                            key={`${sowing.sowingId}-${sowing.germinatedQuantity}`}
-                            sowing={sowing}
-                            isUpdating={isUpdating}
-                            onSave={onSaveGermination}
-                        />
 
                         <div>
                             <span className="sowing-hint">Notas</span>

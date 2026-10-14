@@ -51,5 +51,4 @@ export function getNextStatus(status) {
 export const SOWING_LIST_MESSAGES = {
     loadError: 'No se pudo cargar el listado de siembras.',
     statusError: 'No se pudo cambiar el estado de la siembra. Intente nuevamente.',
-    germinationError: 'No se pudo registrar la germinación. Intente nuevamente.',
 };

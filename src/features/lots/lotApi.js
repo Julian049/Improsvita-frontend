@@ -8,6 +8,7 @@ function fromLotResponse(lot) {
         lotId: lot.id,
         seedId: lot.seedId,
         locationId: lot.locationId,
+        germinationPercentage: lot.germinationPercentage ?? null,
         lotNumber: lot.lotNumber,
         entryDate: toDateOnly(lot.entryDate),
         dueDate: toDateOnly(lot.dueDate),
@@ -37,6 +38,7 @@ function toEntryRequest(payload) {
         locationId: Number(payload.locationId),
         lotNumber: Number(payload.lotNumber),
         quantity: Number(payload.quantity),
+        germinationPercentage: payload.germinationPercentage === '' ? null : Number(payload.germinationPercentage),
         entryDate: payload.entryDate || null,
         dueDate: null,
     };

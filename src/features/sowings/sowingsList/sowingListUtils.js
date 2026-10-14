@@ -3,8 +3,10 @@ import { SOWING_STATUS } from '../sowingStatus';
 
 const pluralizeDays = (n) => `${n} ${n === 1 ? 'día' : 'días'}`;
 
-export function getGerminationPercent(sowing) {
-    return Math.min(100, Math.round(sowing.germinationRate ?? 0));
+// Producción estimada = sembradas × % de germinación del lote. null si el lote no tiene ese %.
+export function getEstimatedProduction(sowing) {
+    if (sowing.germinationPercentage == null) return null;
+    return Math.floor((sowing.quantitySown * sowing.germinationPercentage) / 100);
 }
 
 export function groupByStatus(sowings, status) {
