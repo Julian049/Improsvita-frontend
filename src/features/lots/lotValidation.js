@@ -12,6 +12,7 @@ export const LOT_FIELD_LABELS = {
 
 // Campos sin los que POST /inventory/entries falla; la fecha de ingreso es opcional.
 export const LOT_REQUIRED_FIELDS = ['seedId', 'supplierId', 'locationId', 'lotNumber', 'quantity'];
+export const LOT_EDIT_REQUIRED_FIELDS = ['locationId', 'lotNumber'];
 
 export const LOT_STATUS_LABELS = {
     AVAILABLE: 'Disponible',
@@ -28,10 +29,10 @@ function isEmpty(value) {
     return value === undefined || value === null || String(value).trim() === '';
 }
 
-export function validateLotForm(values) {
+export function validateLotForm(values, requiredFields = LOT_REQUIRED_FIELDS) {
     const errors = {};
 
-    LOT_REQUIRED_FIELDS.forEach((field) => {
+    requiredFields.forEach((field) => {
         if (isEmpty(values[field])) errors[field] = 'Este campo es obligatorio.';
     });
 
