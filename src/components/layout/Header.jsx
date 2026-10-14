@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from './NotificationBell';
 
-function Header() {
+function Header({ isMenuOpen, onToggleMenu }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -13,11 +13,23 @@ function Header() {
 
     return (
         <header className="header">
-            <h2>Improsvita</h2>
+            <div className="header-brand">
+                <button
+                    type="button"
+                    className="menu-button"
+                    aria-label={isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+                    aria-expanded={isMenuOpen}
+                    aria-controls="app-sidebar"
+                    onClick={onToggleMenu}
+                >
+                    ☰
+                </button>
+                <h2>Improsvita</h2>
+            </div>
 
             <div className="header-user">
                 <NotificationBell />
-                <span>{user?.email || 'Administrador'}</span>
+                <span className="header-email">{user?.email || 'Administrador'}</span>
                 <button type="button" className="logout-button" onClick={handleLogout}>
                     Cerrar sesión
                 </button>

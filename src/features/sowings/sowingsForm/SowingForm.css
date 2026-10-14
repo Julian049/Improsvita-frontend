@@ -13,6 +13,7 @@
     border-radius: 12px;
     padding: 32px;
     max-width: 720px;
+    margin-inline: auto;
 }
 
 .sowing-form-header {
@@ -163,6 +164,10 @@
 }
 
 @media (max-width: 640px) {
+    .sowing-form-card {
+        padding: 20px;
+    }
+
     .sowing-form-row {
         flex-direction: column;
     }

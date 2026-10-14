@@ -15,7 +15,8 @@
     flex-direction: column;
     gap: 16px;
     width: 100%;
-    max-width: 1280px;
+    max-width: 1600px;
+    margin-inline: auto;
     color: var(--seed-text);
     font-size: 14px;
     line-height: 1.45;
@@ -572,5 +573,19 @@
 @media (prefers-reduced-motion: reduce) {
     .seed-card {
         transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .seed-search-input {
+        min-width: 0;
+        flex-basis: 100%;
+    }
+
+    .seed-dialog-head,
+    .seed-dialog-body,
+    .seed-dialog-foot {
+        padding-left: 16px;
+        padding-right: 16px;
     }
 }

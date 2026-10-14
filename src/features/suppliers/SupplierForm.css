@@ -8,6 +8,7 @@
     border-radius: 12px;
     padding: 32px;
     max-width: 720px;
+    margin-inline: auto;
 }
 
 .supplier-form-card h2 {
@@ -121,4 +122,14 @@
 
 .seed-button.secondary:hover {
     background: #f3f4f6;
+}
+
+@media (max-width: 640px) {
+    .supplier-form-card {
+        padding: 20px;
+    }
+
+    .supplier-form-row {
+        flex-direction: column;
+    }
 }

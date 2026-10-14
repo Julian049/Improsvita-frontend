@@ -17,11 +17,12 @@ const SECONDARY_LINKS = [
     { to: '/beds', label: 'Camas' },
 ];
 
-function SidebarLink({ to, label, end }) {
+function SidebarLink({ to, label, end, onNavigate }) {
     return (
         <NavLink
             to={to}
             end={end}
+            onClick={onNavigate}
             className={({ isActive }) => `app-sidebar-link ${isActive ? 'on' : ''}`}
         >
             {label}
@@ -29,20 +30,20 @@ function SidebarLink({ to, label, end }) {
     );
 }
 
-function Sidebar() {
+function Sidebar({ onNavigate }) {
     return (
-        <aside className="app-sidebar">
+        <aside id="app-sidebar" className="app-sidebar">
             <div className="app-sidebar-brand">Improsvita</div>
 
             <nav className="app-sidebar-nav" aria-label="Navegación principal">
                 {MAIN_LINKS.map((link) => (
-                    <SidebarLink key={link.to} {...link} />
+                    <SidebarLink key={link.to} {...link} onNavigate={onNavigate} />
                 ))}
 
                 <div className="app-sidebar-sep" role="separator" />
 
                 {SECONDARY_LINKS.map((link) => (
-                    <SidebarLink key={link.to} {...link} />
+                    <SidebarLink key={link.to} {...link} onNavigate={onNavigate} />
                 ))}
             </nav>
         </aside>
