@@ -18,6 +18,7 @@ import {
 } from '../sowingValidation.js';
 import { getBedUsage, getTodayDateString, groupLotsBySeed } from '../sowingUtils.js';
 import { SOWING_STATUS_FLOW, getSowingStatusLabel } from '../sowingStatus.js';
+import { getEstimatedProduction } from '../sowingsList/sowingListUtils.js';
 import { SEED_TYPE_OPTIONS } from '../../seeds/seedValidation.js';
 import './SowingForm.css';
 
@@ -99,6 +100,11 @@ function SowingFormPage() {
             .flatMap((group) => group.lots)
             .find((lot) => String(lot.lotId) === String(values.lotId)) ?? null;
     const availableStock = selectedLot ? Number(selectedLot.availableQuantity) : null;
+    const quantity = Number(values.quantity);
+    const estimatedSeedlings =
+        selectedLot && Number.isInteger(quantity) && quantity > 0
+            ? getEstimatedProduction({ quantitySown: quantity, germinationPercentage: selectedLot.germinationPercentage })
+            : null;
 
     const selectedBed = beds.find((bed) => String(bed.bedId) === String(values.bedId)) ?? null;
     const bedUsage =
@@ -309,6 +315,22 @@ function SowingFormPage() {
                                 <div>
                                     <dt>Vencimiento</dt>
                                     <dd>{formatDate(selectedLot.dueDate)}</dd>
+                                </div>
+                                <div>
+                                    <dt>Germinación del lote</dt>
+                                    <dd>
+                                        {selectedLot.germinationPercentage == null ? 'Sin dato' : `${selectedLot.germinationPercentage}%`}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt>Plántulas estimadas</dt>
+                                    <dd>
+                                        {selectedLot.germinationPercentage == null
+                                            ? 'No se puede estimar'
+                                            : estimatedSeedlings == null
+                                                ? 'Ingresa la cantidad'
+                                                : `≈ ${formatQty(estimatedSeedlings)}`}
+                                    </dd>
                                 </div>
                             </dl>
                         )}
