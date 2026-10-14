@@ -1,199 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getLotKardex, getLots } from '../lotApi.js';
+import { getLots } from '../lotApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
-import { getSuppliers } from '../../suppliers/supplierApi.js';
 import { LOT_STATUS_LABELS, getLotStatusLabel } from '../lotValidation.js';
 import { formatDate } from '../../../utils/dateUtils.js';
 import { formatQty } from '../../../utils/numberUtils.js';
 import {
     LOT_FILTER_INITIAL_STATE,
     LOT_FILTER_MODES,
-    getStockStatus,
+    getLotVariant,
     paginateLots,
 } from './lotListUtils.js';
 import SearchSelect from '../../../components/ui/SearchSelect.jsx';
+import { LotDetail } from './LotDetail.jsx';
 import './LotList.css';
-
-// El color del estado sale del status del backend y del stock, no de la fecha de vencimiento.
-function getLotVariant(lot) {
-    if (lot.status === 'EXPIRED') return 'expired';
-    if (getStockStatus(lot) !== 'available') return 'out';
-    return 'available';
-}
-
-const MOVEMENT_TYPE_LABELS = {
-    ENTRY: 'Entrada',
-    EXIT: 'Salida',
-    ADJUSTMENT: 'Ajuste',
-};
-
-// Las salidas llegan en positivo; los ajustes traen su propio signo.
-function getSignedQuantity(movement) {
-    return movement.movementType === 'EXIT' ? -movement.quantity : movement.quantity;
-}
-
-function useLotMovements(lotId) {
-    const [state, setState] = useState({ movements: [], isLoading: true, error: null });
-
-    useEffect(() => {
-        let cancelled = false;
-
-        Promise.all([getLotKardex(lotId), getSuppliers()])
-            .then(([movements, suppliers]) => {
-                if (cancelled) return;
-                const supplierNameById = new Map(suppliers.map((s) => [String(s.supplierId), s.name]));
-                setState({
-                    movements: movements.map((m) => ({
-                        ...m,
-                        supplierName: m.supplierId ? supplierNameById.get(String(m.supplierId)) || '' : '',
-                    })),
-                    isLoading: false,
-                    error: null,
-                });
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setState({ movements: [], isLoading: false, error: 'No se pudieron cargar los movimientos.' });
-                }
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [lotId]);
-
-    return state;
-}
-
-function LotDetail({ lot, onBack, onSeeSeedLots, onEdit }) {
-    const variant = getLotVariant(lot);
-    const initial = Number(lot.initialQuantity) || 0;
-    const available = Number(lot.availableQuantity) || 0;
-    const used = Math.max(initial - available, 0);
-    const ratio = initial > 0 ? Math.min(available / initial, 1) : 0;
-    const { movements, isLoading: movementsLoading, error: movementsError } = useLotMovements(lot.lotId);
-
-    return (
-        <>
-            <div className="lot-crumb">
-                <button type="button" className="lot-link" onClick={onBack}>
-                    ← Lotes
-                </button>{' '}
-                / <span>Lote {lot.lotNumber}</span>
-            </div>
-
-            <div className="lot-head">
-                <div>
-                    <h1>Lote {lot.lotNumber}</h1>
-                    <p className="lot-head-sub">
-                        <span className={`lot-badge ${variant}`}>{getLotStatusLabel(lot.status)}</span>
-                    </p>
-                </div>
-                <div className="lot-head-actions">
-                    <button type="button" className="seed-button secondary" onClick={() => onEdit(lot.lotId)}>
-                        Editar lote
-                    </button>
-                    {lot.seedId && (
-                        <button type="button" className="seed-button secondary" onClick={() => onSeeSeedLots(lot.seedId)}>
-                            Ver lotes de esta semilla
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <div className="lot-cols">
-                <div className="lot-col-main">
-                    <section className="lot-box">
-                        <h3>Información del lote</h3>
-                        <div className="lot-kv">
-                            <div>
-                                <span>Semilla</span>
-                                {lot.seedName ? (
-                                    <button type="button" className="lot-link" onClick={() => onSeeSeedLots(lot.seedId)}>
-                                        {lot.seedName}
-                                    </button>
-                                ) : (
-                                    <b>—</b>
-                                )}
-                            </div>
-                            <div>
-                                <span>Ubicación</span>
-                                <b>{lot.locationName || '—'}</b>
-                            </div>
-                            <div>
-                                <span>Fecha de ingreso</span>
-                                <b>{formatDate(lot.entryDate)}</b>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className="lot-box">
-                        <h3>Movimientos</h3>
-                        <div className="lot-table-wrapper flat">
-                            <table className="lot-table">
-                                <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Tipo</th>
-                                    <th>Cantidad</th>
-                                    <th>Motivo</th>
-                                    <th>Proveedor</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {movementsLoading && (
-                                    <tr className="static">
-                                        <td colSpan={5}>Cargando movimientos...</td>
-                                    </tr>
-                                )}
-                                {movementsError && (
-                                    <tr className="static">
-                                        <td colSpan={5}>{movementsError}</td>
-                                    </tr>
-                                )}
-                                {!movementsLoading && !movementsError && movements.length === 0 && (
-                                    <tr className="static">
-                                        <td colSpan={5}>Este lote no tiene movimientos registrados.</td>
-                                    </tr>
-                                )}
-                                {movements.map((m) => {
-                                    const signed = getSignedQuantity(m);
-                                    return (
-                                        <tr key={m.movementId} className="static">
-                                            <td>{formatDate(m.movementDate)}</td>
-                                            <td>{MOVEMENT_TYPE_LABELS[m.movementType] || m.movementType}</td>
-                                            <td className={signed >= 0 ? 'lot-mv-in' : 'lot-mv-out'}>
-                                                {signed >= 0 ? '+' : '−'}
-                                                {formatQty(Math.abs(signed))}
-                                            </td>
-                                            <td>{m.reason || '—'}</td>
-                                            <td>{m.supplierName || '—'}</td>
-                                        </tr>
-                                    );
-                                })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                </div>
-
-                <section className="lot-box">
-                    <h3>Cantidad</h3>
-                    <div className="lot-big">{formatQty(available)}</div>
-                    <span className="lot-hint">disponibles de {formatQty(initial)} iniciales</span>
-                    <div className="lot-meter large">
-                        <i style={{ width: `${ratio * 100}%` }} />
-                    </div>
-                    <span className="lot-hint">
-                        {used > 0 ? `${formatQty(used)} unidades ya salieron del lote` : 'Aún no se ha usado'}
-                    </span>
-                </section>
-            </div>
-        </>
-    );
-}
 
 const STATUS_OPTIONS = Object.entries(LOT_STATUS_LABELS).map(([value, label]) => ({ value, label }));
 
@@ -425,6 +246,9 @@ function LotListPage() {
                     onBack={() => setSelectedLotId(null)}
                     onSeeSeedLots={handleSeeSeedLots}
                     onEdit={handleEditLot}
+                    onLotChange={(updated) =>
+                        setLots((prev) => prev.map((l) => (String(l.lotId) === String(updated.lotId) ? updated : l)))
+                    }
                 />
             </div>
         );

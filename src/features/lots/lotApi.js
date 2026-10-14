@@ -128,3 +128,23 @@ export async function updateLot(id, payload) {
         throw err;
     }
 }
+
+// Pendiente del backend: aún no existe PUT /inventory/lots/{id}/status (hoy el estado solo cambia solo con el stock).
+export async function updateLotStatus(id, status) {
+    if (MOCK_CONFIG.lots) {
+        await mockDelay();
+        const lot = MOCK_LOTS.find((l) => String(l.lotId) === String(id));
+        lot.status = status;
+        return lot;
+    }
+
+    try {
+        const { data } = await axiosClient.put(`/inventory/lots/${id}/status`, { status });
+        return fromLotResponse(data);
+    } catch (err) {
+        if (err.response?.status === 404 || err.response?.status === 405) {
+            err.userMessage = 'El servidor todavía no permite cambiar el estado de un lote.';
+        }
+        throw err;
+    }
+}

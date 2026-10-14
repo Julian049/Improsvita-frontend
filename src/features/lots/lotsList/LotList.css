@@ -417,6 +417,28 @@
     font-weight: 700;
 }
 
+.lot-status-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.lot-status-box h3 {
+    margin-bottom: 4px;
+}
+
+.lot-trace-choices {
+    margin: 10px 0 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lot-status-error {
+    color: #b3261e;
+}
+
 @media (max-width: 900px) {
     .lot-cols {
         grid-template-columns: 1fr;
