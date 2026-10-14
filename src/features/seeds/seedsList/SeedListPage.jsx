@@ -13,6 +13,7 @@ import {SeedCard} from './SeedCard';
 import {SeedDetailModal} from './SeedDetailModal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog.jsx';
 import {getApiErrorMessage} from '../../../api/apiError.js';
+import SearchSelect from '../../../components/ui/SearchSelect.jsx';
 import './SeedList.css';
 
 const SEED_TYPE_LABELS = Object.fromEntries(
@@ -213,19 +214,14 @@ export const SeedListPage = () => {
                 );
             case 'supplier':
                 return (
-                    <select
+                    <SearchSelect
                         className="seed-select"
                         aria-label="Proveedor"
                         value={draftValue}
                         onChange={handleSelectValueChange}
-                    >
-                        <option value="">Selecciona un proveedor</option>
-                        {suppliers.map((supplier) => (
-                            <option key={supplier.supplierId} value={supplier.supplierId}>
-                                {supplier.name}
-                            </option>
-                        ))}
-                    </select>
+                        placeholder="Busca un proveedor"
+                        options={suppliers.map((s) => ({ value: s.supplierId, label: s.name }))}
+                    />
                 );
             case 'stock':
                 return (
