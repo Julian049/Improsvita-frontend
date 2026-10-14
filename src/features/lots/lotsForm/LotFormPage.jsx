@@ -220,20 +220,21 @@ function LotFormPage() {
                         </label>
                     </div>
 
-                    <label className="lot-field">
-                        <span>{labelFor('quantity')}</span>
-                        <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={values.quantity}
-                            onChange={handleChange('quantity')}
-                            placeholder="Ej. 100"
-                        />
-                        {errors.quantity && <small className="field-error">{errors.quantity}</small>}
-                    </label>
-
                     <div className="lot-form-row">
+                        <label className="lot-field">
+                            <span>{labelFor('quantity')}</span>
+                            <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                inputMode="numeric"
+                                value={values.quantity}
+                                onChange={handleChange('quantity')}
+                                placeholder="Ej. 100"
+                            />
+                            {errors.quantity && <small className="field-error">{errors.quantity}</small>}
+                        </label>
+
                         <label className="lot-field">
                             <span>{labelFor('entryDate')}</span>
                             <input
@@ -246,16 +247,6 @@ function LotFormPage() {
                             ) : (
                                 <small>Si la dejas vacía se registra con la fecha de hoy.</small>
                             )}
-                        </label>
-
-                        <label className="lot-field">
-                            <span>{labelFor('dueDate')}</span>
-                            <input
-                                type="date"
-                                value={values.dueDate}
-                                onChange={handleChange('dueDate')}
-                            />
-                            {errors.dueDate && <small className="field-error">{errors.dueDate}</small>}
                         </label>
                     </div>
 
