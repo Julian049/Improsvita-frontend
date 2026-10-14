@@ -4,8 +4,7 @@ import './Sidebar.css';
 const MAIN_LINKS = [
     { to: '/', label: 'Panel principal', end: true },
     { to: '/seeds', label: 'Semillas' },
-    { to: '/lots', label: 'Lotes', end: true },
-    { to: '/lots/trace', label: 'Trazabilidad' },
+    { to: '/lots', label: 'Lotes' },
     // { to: '/seedlings', label: 'Plántulas' },
     { to: '/sowings', label: 'Siembras' },
 ];
