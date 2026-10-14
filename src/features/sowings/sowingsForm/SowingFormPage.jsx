@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createSowing, getSowings } from '../sowingApi.js';
+import { createSowing, getSowings, updateSowingStatus } from '../sowingApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLots } from '../../lots/lotApi.js';
 import { getBeds } from '../../beds/bedApi.js';
@@ -16,6 +16,7 @@ import {
     validateSowingForm,
 } from '../sowingValidation.js';
 import { getBedUsage, getTodayDateString, groupLotsBySeed } from '../sowingUtils.js';
+import { SOWING_STATUS_FLOW, getSowingStatusLabel } from '../sowingStatus.js';
 import { SEED_TYPE_OPTIONS } from '../../seeds/seedValidation.js';
 import './SowingForm.css';
 
@@ -191,10 +192,17 @@ function SowingFormPage() {
         setIsSubmitting(true);
         try {
             const sowing = await createSowing(values);
-            setSubmitMessage({
-                type: 'success',
-                text: `${SOWING_MESSAGES.success} Siembra n.° ${sowing.sowingId}: se descontaron ${formatQty(sowing.quantitySown)} semillas del lote ${selectedLot.lotNumber}.`,
-            });
+            const text = `${SOWING_MESSAGES.success} Siembra n.° ${sowing.sowingId}: se descontaron ${formatQty(sowing.quantitySown)} semillas del lote ${selectedLot.lotNumber}.`;
+            // El POST del backend siempre crea la siembra "En progreso"; el estado elegido se aplica después.
+            let statusWarning = '';
+            if (values.status !== sowing.status) {
+                try {
+                    await updateSowingStatus(sowing.sowingId, values.status);
+                } catch {
+                    statusWarning = ` No se pudo asignar el estado "${getSowingStatusLabel(values.status)}"; cámbialo desde el listado.`;
+                }
+            }
+            setSubmitMessage({ type: statusWarning ? 'error' : 'success', text: text + statusWarning });
             setValues(SOWING_FORM_INITIAL_VALUES);
             resetBed();
             refreshLots();
@@ -345,6 +353,16 @@ function SowingFormPage() {
                                 />
                             </Field>
                         </div>
+
+                        <Field label="Estado" required={isRequired('status')} error={errors.status}>
+                            <select value={values.status} onChange={handleChange('status')}>
+                                {SOWING_STATUS_FLOW.map((status) => (
+                                    <option key={status} value={status}>
+                                        {getSowingStatusLabel(status)}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
 
                         <div className="sowing-form-row">
                             <Field
