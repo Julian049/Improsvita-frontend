@@ -88,3 +88,43 @@ export async function createLot(payload) {
     const { data } = await axiosClient.post('/inventory/entries', toEntryRequest(payload));
     return fromLotResponse(data);
 }
+
+export async function getLotById(id) {
+    if (MOCK_CONFIG.lots) {
+        await mockDelay();
+        return MOCK_LOTS.find((lot) => String(lot.lotId) === String(id));
+    }
+
+    const { data } = await axiosClient.get(`/inventory/lots/${id}`);
+    return fromLotResponse(data);
+}
+
+// Semilla, proveedor y cantidad no se editan: la cantidad cambia solo con movimientos (kardex).
+function toLotUpdateRequest(payload) {
+    return {
+        locationId: Number(payload.locationId),
+        lotNumber: Number(payload.lotNumber),
+        germinationPercentage: payload.germinationPercentage === '' ? null : Number(payload.germinationPercentage),
+        entryDate: payload.entryDate || null,
+    };
+}
+
+// Pendiente del backend: aún no existe PUT /inventory/lots/{id}; queda listo para cuando la API lo exponga.
+export async function updateLot(id, payload) {
+    if (MOCK_CONFIG.lots) {
+        await mockDelay();
+        const lot = MOCK_LOTS.find((l) => String(l.lotId) === String(id));
+        Object.assign(lot, toLotUpdateRequest(payload));
+        return lot;
+    }
+
+    try {
+        const { data } = await axiosClient.put(`/inventory/lots/${id}`, toLotUpdateRequest(payload));
+        return fromLotResponse(data);
+    } catch (err) {
+        if (err.response?.status === 404 || err.response?.status === 405) {
+            err.userMessage = 'El servidor todavía no permite editar lotes.';
+        }
+        throw err;
+    }
+}

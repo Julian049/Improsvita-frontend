@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getLotKardex, getLots } from '../lotApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
@@ -67,7 +67,7 @@ function useLotMovements(lotId) {
     return state;
 }
 
-function LotDetail({ lot, onBack, onSeeSeedLots }) {
+function LotDetail({ lot, onBack, onSeeSeedLots, onEdit }) {
     const variant = getLotVariant(lot);
     const initial = Number(lot.initialQuantity) || 0;
     const available = Number(lot.availableQuantity) || 0;
@@ -92,6 +92,9 @@ function LotDetail({ lot, onBack, onSeeSeedLots }) {
                     </p>
                 </div>
                 <div className="lot-head-actions">
+                    <button type="button" className="seed-button secondary" onClick={() => onEdit(lot.lotId)}>
+                        Editar lote
+                    </button>
                     {lot.seedId && (
                         <button type="button" className="seed-button secondary" onClick={() => onSeeSeedLots(lot.seedId)}>
                             Ver lotes de esta semilla
@@ -201,6 +204,7 @@ function getInitialFilter(location) {
 
 function LotListPage() {
     const location = useLocation();
+    const navigate = useNavigate();
     const [lots, setLots] = useState([]);
     const [seeds, setSeeds] = useState([]);
     const [locations, setLocations] = useState([]);
@@ -321,6 +325,12 @@ function LotListPage() {
         }
     }
 
+    // Guarda el lote abierto en esta entrada del historial: al guardar o volver del formulario se reabre su detalle.
+    function handleEditLot(lotId) {
+        navigate(location.pathname, { replace: true, state: { lotId } });
+        navigate(`/lots/${lotId}/edit`);
+    }
+
     function handleSeeSeedLots(seedId) {
         setDraftMode('seedId');
         applyFilter({ mode: 'seedId', value: String(seedId) });
@@ -414,6 +424,7 @@ function LotListPage() {
                     lot={selectedLot}
                     onBack={() => setSelectedLotId(null)}
                     onSeeSeedLots={handleSeeSeedLots}
+                    onEdit={handleEditLot}
                 />
             </div>
         );

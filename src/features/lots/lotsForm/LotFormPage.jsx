@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useGoBack } from '../../../hooks/useGoBack';
-import { createLot } from '../lotApi.js';
+import { createLot, getLotById, updateLot } from '../lotApi.js';
 import { getAllSeeds, getActiveSupplierIdsBySeed } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
 import { getSuppliers } from '../../suppliers/supplierApi.js';
 import { getApiErrorMessage } from '../../../api/apiError.js';
 import {
+    LOT_EDIT_REQUIRED_FIELDS,
     LOT_FIELD_LABELS,
     LOT_FORM_INITIAL_VALUES,
     LOT_REQUIRED_FIELDS,
@@ -15,10 +16,12 @@ import {
 import SearchSelect from '../../../components/ui/SearchSelect.jsx';
 import './LotForm.css';
 
-const isRequired = (field) => LOT_REQUIRED_FIELDS.includes(field);
-const labelFor = (field) => `${LOT_FIELD_LABELS[field]}${isRequired(field) ? ' *' : ' (opcional)'}`;
-
 function LotFormPage() {
+    const { id } = useParams();
+    const isEditing = Boolean(id);
+    const requiredFields = isEditing ? LOT_EDIT_REQUIRED_FIELDS : LOT_REQUIRED_FIELDS;
+    const labelFor = (field) =>
+        `${LOT_FIELD_LABELS[field]}${requiredFields.includes(field) ? ' *' : ' (opcional)'}`;
     const navigate = useNavigate();
     const goBack = useGoBack('/lots');
 
@@ -39,15 +42,27 @@ function LotFormPage() {
     const [submitMessage, setSubmitMessage] = useState(null);
 
     useEffect(() => {
-        Promise.all([getAllSeeds(), getSuppliers(), getLocations()])
-            .then(([seedsData, suppliersData, locationsData]) => {
+        Promise.all([getAllSeeds(), getSuppliers(), getLocations(), isEditing ? getLotById(id) : null])
+            .then(([seedsData, suppliersData, locationsData, lot]) => {
                 setSeeds(seedsData);
                 setSuppliers(suppliersData);
                 setLocations(locationsData);
+                if (lot) {
+                    setValues({
+                        ...LOT_FORM_INITIAL_VALUES,
+                        seedId: String(lot.seedId ?? ''),
+                        locationId: String(lot.locationId ?? ''),
+                        lotNumber: String(lot.lotNumber ?? ''),
+                        germinationPercentage: lot.germinationPercentage == null ? '' : String(lot.germinationPercentage),
+                        entryDate: lot.entryDate || '',
+                    });
+                }
             })
-            .catch(() => setLoadError('No se pudo cargar la información para registrar lotes.'))
+            .catch(() =>
+                setLoadError(isEditing ? 'No se pudo cargar el lote solicitado.' : 'No se pudo cargar la información para registrar lotes.')
+            )
             .finally(() => setIsLoading(false));
-    }, []);
+    }, [id, isEditing]);
 
     function handleChange(field) {
         return (e) => {
@@ -84,7 +99,7 @@ function LotFormPage() {
         e.preventDefault();
         setSubmitMessage(null);
 
-        const validationErrors = validateLotForm(values);
+        const validationErrors = validateLotForm(values, requiredFields);
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
@@ -100,12 +115,12 @@ function LotFormPage() {
 
         setIsSubmitting(true);
         try {
-            await createLot(values);
+            await (isEditing ? updateLot(id, values) : createLot(values));
             goBack();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
-                text: getApiErrorMessage(err, 'No se pudo registrar el lote. Intenta nuevamente.'),
+                text: getApiErrorMessage(err, 'No se pudo guardar el lote. Intenta nuevamente.'),
             });
         } finally {
             setIsSubmitting(false);
@@ -132,51 +147,62 @@ function LotFormPage() {
     return (
         <div className="lot-form-page">
             <div className="lot-form-card">
-                <h2>Registrar lote</h2>
+                <h2>{isEditing ? 'Modificar lote' : 'Registrar lote'}</h2>
                 <p className="lot-form-subtitle">
-                    Registra la entrada de un lote de semillas al inventario.
+                    {isEditing
+                        ? 'Actualiza los datos del lote. La semilla y la cantidad no se modifican aquí.'
+                        : 'Registra la entrada de un lote de semillas al inventario.'}
                 </p>
 
                 <form onSubmit={handleSubmit} className="lot-form" noValidate>
+                    {isEditing ? (
+                        <div className="lot-field">
+                            <span>{LOT_FIELD_LABELS.seedId}</span>
+                            <div className="lot-field-readonly">
+                                {seeds.find((seed) => String(seed.seedId) === values.seedId)?.name || '—'}
+                            </div>
+                        </div>
+                    ) : (
                     <div className="lot-form-row">
-                        <label className="lot-field">
-                            <span>{labelFor('seedId')}</span>
-                            <SearchSelect
-                                value={values.seedId}
-                                onChange={handleSeedChange}
-                                placeholder="Busca una semilla"
-                                options={seeds.map((seed) => ({ value: seed.seedId, label: seed.name }))}
-                            />
-                            {errors.seedId && <small className="field-error">{errors.seedId}</small>}
-                        </label>
+                            <label className="lot-field">
+                                <span>{labelFor('seedId')}</span>
+                                <SearchSelect
+                                    value={values.seedId}
+                                    onChange={handleSeedChange}
+                                    placeholder="Busca una semilla"
+                                    options={seeds.map((seed) => ({ value: seed.seedId, label: seed.name }))}
+                                />
+                                {errors.seedId && <small className="field-error">{errors.seedId}</small>}
+                            </label>
 
-                        <label className="lot-field">
-                            <span>{labelFor('supplierId')}</span>
-                            <SearchSelect
-                                value={values.supplierId}
-                                onChange={handleChange('supplierId')}
-                                disabled={!values.seedId || linkedSupplierIds === null}
-                                placeholder={
-                                    !values.seedId
-                                        ? 'Primero selecciona una semilla'
-                                        : linkedSupplierIds === null
-                                            ? 'Cargando proveedores...'
-                                            : 'Busca un proveedor'
-                                }
-                                options={supplierOptions.map((s) => ({ value: s.supplierId, label: s.name }))}
-                            />
-                            {errors.supplierId && (
-                                <small className="field-error">{errors.supplierId}</small>
-                            )}
-                            {linksError && <small className="field-error">{linksError}</small>}
-                            {seedHasNoSuppliers && (
-                                <small className="field-error">
-                                    Esta semilla no tiene proveedores vinculados.{' '}
-                                    <Link to={`/seeds/${values.seedId}/edit`}>Vincular proveedores</Link>
-                                </small>
-                            )}
-                        </label>
-                    </div>
+                            <label className="lot-field">
+                                <span>{labelFor('supplierId')}</span>
+                                <SearchSelect
+                                    value={values.supplierId}
+                                    onChange={handleChange('supplierId')}
+                                    disabled={!values.seedId || linkedSupplierIds === null}
+                                    placeholder={
+                                        !values.seedId
+                                            ? 'Primero selecciona una semilla'
+                                            : linkedSupplierIds === null
+                                                ? 'Cargando proveedores...'
+                                                : 'Busca un proveedor'
+                                    }
+                                    options={supplierOptions.map((s) => ({ value: s.supplierId, label: s.name }))}
+                                />
+                                {errors.supplierId && (
+                                    <small className="field-error">{errors.supplierId}</small>
+                                )}
+                                {linksError && <small className="field-error">{linksError}</small>}
+                                {seedHasNoSuppliers && (
+                                    <small className="field-error">
+                                        Esta semilla no tiene proveedores vinculados.{' '}
+                                        <Link to={`/seeds/${values.seedId}/edit`}>Vincular proveedores</Link>
+                                    </small>
+                                )}
+                            </label>
+                        </div>
+                    )}
 
                     <div className="lot-form-row">
                         <label className="lot-field">
@@ -212,6 +238,7 @@ function LotFormPage() {
                     </div>
 
                     <div className="lot-form-row">
+                        {!isEditing && (
                         <label className="lot-field">
                             <span>{labelFor('quantity')}</span>
                             <input
@@ -226,6 +253,7 @@ function LotFormPage() {
                             />
                             {errors.quantity && <small className="field-error">{errors.quantity}</small>}
                         </label>
+                        )}
 
                         <label className="lot-field">
                             <span>{labelFor('germinationPercentage')}</span>
@@ -259,7 +287,7 @@ function LotFormPage() {
                             {errors.entryDate ? (
                                 <small className="field-error">{errors.entryDate}</small>
                             ) : (
-                                <small>Si la dejas vacía se registra con la fecha de hoy.</small>
+                                !isEditing && <small>Si la dejas vacía se registra con la fecha de hoy.</small>
                             )}
                         </label>
                     </div>
@@ -279,7 +307,7 @@ function LotFormPage() {
                             Cancelar
                         </button>
                         <button type="submit" className="seed-button primary" disabled={isSubmitting}>
-                            {isSubmitting ? 'Guardando...' : 'Registrar'}
+                            {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Registrar'}
                         </button>
                     </div>
                 </form>
