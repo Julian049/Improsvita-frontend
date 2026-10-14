@@ -13,6 +13,7 @@ import {
     getStockStatus,
     paginateLots,
 } from './lotListUtils.js';
+import SearchSelect from '../../../components/ui/SearchSelect.jsx';
 import './LotList.css';
 
 // El color del estado sale del status del backend y del stock, no de la fecha de vencimiento.
@@ -351,11 +352,25 @@ function LotListPage() {
         const config = getValueOptions(draftMode);
         if (!config) return null;
 
+        const value = appliedFilter.mode === draftMode ? appliedFilter.value : '';
+        if (draftMode === 'seedId') {
+            return (
+                <SearchSelect
+                    className="lot-select"
+                    aria-label={config.label}
+                    value={value}
+                    onChange={handleValueChange}
+                    placeholder="Busca una semilla"
+                    options={config.options}
+                />
+            );
+        }
+
         return (
             <select
                 className="lot-select"
                 aria-label={config.label}
-                value={appliedFilter.mode === draftMode ? appliedFilter.value : ''}
+                value={value}
                 onChange={handleValueChange}
             >
                 <option value="">{config.placeholder}</option>

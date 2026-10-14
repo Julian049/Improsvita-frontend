@@ -12,6 +12,7 @@ import {
     LOT_REQUIRED_FIELDS,
     validateLotForm,
 } from '../lotValidation.js';
+import SearchSelect from '../../../components/ui/SearchSelect.jsx';
 import './LotForm.css';
 
 const isRequired = (field) => LOT_REQUIRED_FIELDS.includes(field);
@@ -140,37 +141,30 @@ function LotFormPage() {
                     <div className="lot-form-row">
                         <label className="lot-field">
                             <span>{labelFor('seedId')}</span>
-                            <select value={values.seedId} onChange={handleSeedChange}>
-                                <option value="">Selecciona una semilla</option>
-                                {seeds.map((seed) => (
-                                    <option key={seed.seedId} value={seed.seedId}>
-                                        {seed.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <SearchSelect
+                                value={values.seedId}
+                                onChange={handleSeedChange}
+                                placeholder="Busca una semilla"
+                                options={seeds.map((seed) => ({ value: seed.seedId, label: seed.name }))}
+                            />
                             {errors.seedId && <small className="field-error">{errors.seedId}</small>}
                         </label>
 
                         <label className="lot-field">
                             <span>{labelFor('supplierId')}</span>
-                            <select
+                            <SearchSelect
                                 value={values.supplierId}
                                 onChange={handleChange('supplierId')}
                                 disabled={!values.seedId || linkedSupplierIds === null}
-                            >
-                                <option value="">
-                                    {!values.seedId
+                                placeholder={
+                                    !values.seedId
                                         ? 'Primero selecciona una semilla'
                                         : linkedSupplierIds === null
                                             ? 'Cargando proveedores...'
-                                            : 'Selecciona un proveedor'}
-                                </option>
-                                {supplierOptions.map((supplier) => (
-                                    <option key={supplier.supplierId} value={supplier.supplierId}>
-                                        {supplier.name}
-                                    </option>
-                                ))}
-                            </select>
+                                            : 'Busca un proveedor'
+                                }
+                                options={supplierOptions.map((s) => ({ value: s.supplierId, label: s.name }))}
+                            />
                             {errors.supplierId && (
                                 <small className="field-error">{errors.supplierId}</small>
                             )}
