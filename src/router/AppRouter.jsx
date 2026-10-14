@@ -7,6 +7,7 @@ import SeedFormPage from '../features/seeds/seedsForm/SeedFormPage.jsx';
 import SeedListPage from '../features/seeds/seedsList/SeedListPage.jsx';
 import LotFormPage from '../features/lots/lotsForm/LotFormPage.jsx';
 import LotListPage from '../features/lots/lotsList/LotListPage.jsx';
+import LotTracePage from '../features/lots/lotTrace/LotTracePage.jsx';
 import SupplierListPage from '../features/suppliers/SupplierListPage';
 import SupplierFormPage from '../features/suppliers/SupplierFormPage';
 import SowingFormPage from '../features/sowings/sowingsForm/SowingFormPage.jsx';
@@ -37,6 +38,7 @@ function AppRouter() {
                         <Route path="lots" element={<LotListPage />} />
                         <Route path="lots/new" element={<LotFormPage />} />
                         <Route path="lots/:id/edit" element={<LotFormPage />} />
+                        <Route path="lots/trace" element={<LotTracePage />} />
                         <Route path="suppliers" element={<SupplierListPage />} />
                         <Route path="suppliers/new" element={<SupplierFormPage />} />
                         <Route path="sowings" element={<SowingListPage />} />

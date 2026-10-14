@@ -4,6 +4,13 @@ export function getStockStatus(lot) {
     return Number(lot.availableQuantity) > 0 ? 'available' : 'out_of_stock';
 }
 
+// El color del estado sale del status del backend y del stock, no de la fecha de vencimiento.
+export function getLotVariant(lot) {
+    if (lot.status === 'EXPIRED') return 'expired';
+    if (getStockStatus(lot) !== 'available') return 'out';
+    return 'available';
+}
+
 export function paginateLots(lots, page) {
     const totalPages = Math.max(1, Math.ceil(lots.length / PAGE_SIZE));
     const safePage = Math.min(Math.max(1, page), totalPages);
