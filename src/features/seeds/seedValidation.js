@@ -1,15 +1,9 @@
 export const FIELD_LABELS = {
     name: 'Nombre de la semilla',
-    type: 'Tipo',
+    typeId: 'Tipo',
     description: 'Descripción',
     supplierIds: 'Proveedores',
 };
-
-export const SEED_TYPE_OPTIONS = [
-    { value: 'HYBRID', label: 'Híbrida' },
-    { value: 'TRADITIONAL', label: 'Tradicional' },
-    { value: 'MODIFIED', label: 'Modificada' },
-];
 
 const NAME_MAX = 50;
 const DESCRIPTION_MAX = 255;
@@ -22,7 +16,7 @@ export function validateSeedForm(values) {
     const errors = {};
 
     if (isEmpty(values.name)) errors.name = 'Este campo es obligatorio.';
-    if (isEmpty(values.type)) errors.type = 'Este campo es obligatorio.';
+    if (isEmpty(values.typeId)) errors.typeId = 'Este campo es obligatorio.';
 
     if (!isEmpty(values.name) && values.name.length > NAME_MAX) {
         errors.name = `Máximo ${NAME_MAX} caracteres.`;
@@ -36,7 +30,7 @@ export function validateSeedForm(values) {
 
 export const SEED_FORM_INITIAL_VALUES = {
     name: '',
-    type: '',
+    typeId: '',
     description: '',
     supplierIds: [],
 };

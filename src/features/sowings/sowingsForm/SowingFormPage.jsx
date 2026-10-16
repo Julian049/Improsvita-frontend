@@ -19,12 +19,8 @@ import {
 import { getBedUsage, getTodayDateString, groupLotsBySeed } from '../sowingUtils.js';
 import { SOWING_STATUS_FLOW, getSowingStatusLabel } from '../sowingStatus.js';
 import { getEstimatedProduction } from '../sowingsList/sowingListUtils.js';
-import { SEED_TYPE_OPTIONS } from '../../seeds/seedValidation.js';
-import './SowingForm.css';
+import { getSeedTypeLabel } from '../../seedTypes/seedTypeUtils.js';import './SowingForm.css';
 
-const SEED_TYPE_LABELS = Object.fromEntries(
-    SEED_TYPE_OPTIONS.map((option) => [option.value, option.label])
-);
 
 const fetchAvailableLots = () => getLots({ mode: 'status', value: 'AVAILABLE' });
 
@@ -306,7 +302,7 @@ function SowingFormPage() {
                                 </div>
                                 <div>
                                     <dt>Tipo</dt>
-                                    <dd>{SEED_TYPE_LABELS[selectedLot.seedType] || selectedLot.seedType || '—'}</dd>
+                                <dd>{getSeedTypeLabel(selectedLot.seedType) || '—'}</dd>
                                 </div>
                                 <div>
                                     <dt>Stock del lote</dt>

@@ -3,11 +3,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useGoBack } from '../../../hooks/useGoBack';
 import { createSeed, getSeedById, updateSeed } from '../seedApi.js';
 import { getSuppliers } from '../../suppliers/supplierApi.js';
+import {
+    createSeedType,
+    deleteSeedType,
+    getSeedTypes,
+    updateSeedType,
+} from '../../seedTypes/seedTypeApi.js';
+import { getSeedTypeLabel } from '../../seedTypes/seedTypeUtils.js';
+import {
+    SEED_TYPE_FORM_INITIAL_VALUES,
+    validateSeedTypeForm,
+} from '../../seedTypes/seedTypeValidation.js';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog.jsx';
 import { getApiErrorMessage } from '../../../api/apiError.js';
 import {
     FIELD_LABELS,
     SEED_FORM_INITIAL_VALUES,
-    SEED_TYPE_OPTIONS,
     validateSeedForm,
 } from '../seedValidation.js';
 import './SeedForm.css';
@@ -21,15 +32,33 @@ function SeedFormPage() {
     const [values, setValues] = useState(SEED_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
     const [suppliers, setSuppliers] = useState([]);
+    const [seedTypes, setSeedTypes] = useState([]);
     const [blockedSupplierIds, setBlockedSupplierIds] = useState([]);
     const [isLoading, setIsLoading] = useState(isEditing);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState(null);
 
+    const [isTypePanelOpen, setIsTypePanelOpen] = useState(false);
+    const [editingTypeId, setEditingTypeId] = useState(null);
+    const [typeDraft, setTypeDraft] = useState(SEED_TYPE_FORM_INITIAL_VALUES);
+    const [typeError, setTypeError] = useState(null);
+    const [typeInUseName, setTypeInUseName] = useState(null);
+    const [isSavingType, setIsSavingType] = useState(false);
+    const [typeToDelete, setTypeToDelete] = useState(null);
+    const [isDeletingType, setIsDeletingType] = useState(false);
+
+    const selectedType = seedTypes.find((t) => String(t.seedTypeId) === String(values.typeId)) || null;
+
     useEffect(() => {
         getSuppliers()
             .then(setSuppliers)
             .catch(() => setSuppliers([]));
+    }, []);
+
+    useEffect(() => {
+        getSeedTypes()
+            .then(setSeedTypes)
+            .catch(() => setSeedTypes([]));
     }, []);
 
     useEffect(() => {
@@ -39,7 +68,7 @@ function SeedFormPage() {
             .then((seed) => {
                 setValues({
                     name: seed.name || '',
-                    type: seed.type || '',
+                    typeId: seed.typeId ? String(seed.typeId) : '',
                     description: seed.description || '',
                     supplierIds: seed.supplierIds.map(String),
                 });
@@ -72,6 +101,103 @@ function SeedFormPage() {
         setErrors((prev) => ({ ...prev, supplierIds: undefined }));
     }
 
+    function closeTypePanel() {
+        setIsTypePanelOpen(false);
+        setEditingTypeId(null);
+        setTypeDraft(SEED_TYPE_FORM_INITIAL_VALUES);
+        setTypeError(null);
+        setTypeInUseName(null);
+    }
+
+    function handleToggleNewType() {
+        if (isTypePanelOpen) {
+            closeTypePanel();
+            return;
+        }
+        setEditingTypeId(null);
+        setTypeDraft(SEED_TYPE_FORM_INITIAL_VALUES);
+        setTypeError(null);
+        setTypeInUseName(null);
+        setIsTypePanelOpen(true);
+    }
+
+    function handleEditType() {
+        if (!selectedType) return;
+        setEditingTypeId(selectedType.seedTypeId);
+        setTypeDraft({ name: selectedType.name, description: selectedType.description });
+        setTypeError(null);
+        setTypeInUseName(null);
+        setIsTypePanelOpen(true);
+    }
+
+    function handleTypeDraftChange(field) {
+        return (e) => {
+            setTypeDraft((prev) => ({ ...prev, [field]: e.target.value }));
+            setTypeError(null);
+        };
+    }
+
+    // Crea o actualiza el tipo; el formulario de la semilla no se toca.
+    async function handleSaveType() {
+        const typeErrors = validateSeedTypeForm(typeDraft);
+        if (Object.keys(typeErrors).length > 0) {
+            setTypeError(Object.values(typeErrors)[0]);
+            return;
+        }
+
+        setIsSavingType(true);
+        setTypeError(null);
+        try {
+            if (editingTypeId) {
+                const updated = await updateSeedType(editingTypeId, typeDraft);
+                setSeedTypes((prev) => prev.map((t) => (t.seedTypeId === updated.seedTypeId ? updated : t)));
+            } else {
+                const created = await createSeedType(typeDraft);
+                setSeedTypes((prev) => [...prev, created]);
+                setValues((prev) => ({ ...prev, typeId: String(created.seedTypeId) }));
+                setErrors((prev) => ({ ...prev, typeId: undefined }));
+            }
+            closeTypePanel();
+        } catch (err) {
+            setTypeError(getApiErrorMessage(err, 'No se pudo guardar el tipo. Intenta nuevamente.'));
+        } finally {
+            setIsSavingType(false);
+        }
+    }
+
+    // Enter dentro del mini-formulario guarda el tipo y no envía el formulario de la semilla.
+    function handleTypeKeyDown(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSaveType();
+        }
+    }
+
+    async function handleConfirmDeleteType() {
+        const target = typeToDelete;
+        setIsDeletingType(true);
+        setTypeError(null);
+        setTypeInUseName(null);
+        try {
+            await deleteSeedType(target.seedTypeId);
+            setSeedTypes((prev) => prev.filter((t) => t.seedTypeId !== target.seedTypeId));
+            setValues((prev) => ({ ...prev, typeId: '' }));
+            closeTypePanel();
+        } catch (err) {
+            if (err.response?.status === 409) {
+                setTypeError(
+                    `No se puede eliminar el tipo "${getSeedTypeLabel(target.name)}" porque tiene semillas asociadas.`
+                );
+                setTypeInUseName(target.name);
+            } else {
+                setTypeError(getApiErrorMessage(err, 'No se pudo eliminar el tipo.'));
+            }
+        } finally {
+            setIsDeletingType(false);
+            setTypeToDelete(null);
+        }
+    }
+
     async function handleSubmit(e) {
         e.preventDefault();
         setSubmitMessage(null);
@@ -92,7 +218,7 @@ function SeedFormPage() {
 
         const payload = {
             name: values.name.trim(),
-            type: values.type,
+            typeId: values.typeId,
             description: values.description.trim(),
             supplierIds: values.supplierIds,
         };
@@ -139,18 +265,110 @@ function SeedFormPage() {
                             {errors.name && <small className="field-error">{errors.name}</small>}
                         </label>
 
-                        <label className="seed-field">
+                        <div className="seed-field">
                             <span>Tipo *</span>
-                            <select value={values.type} onChange={handleChange('type')}>
-                                <option value="">Selecciona un tipo</option>
-                                {SEED_TYPE_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.type && <small className="field-error">{errors.type}</small>}
-                        </label>
+                            <div className="seed-type-row">
+                                <select
+                                    aria-label="Tipo"
+                                    value={values.typeId}
+                                    onChange={handleChange('typeId')}
+                                >
+                                    <option value="">Selecciona un tipo</option>
+                                    {seedTypes.map((seedType) => (
+                                        <option key={seedType.seedTypeId} value={String(seedType.seedTypeId)}>
+                                            {getSeedTypeLabel(seedType.name)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    className="seed-button secondary"
+                                    onClick={handleToggleNewType}
+                                    aria-expanded={isTypePanelOpen}
+                                >
+                                    {isTypePanelOpen ? 'Cancelar' : '+ Nuevo tipo'}
+                                </button>
+                            </div>
+                            {errors.typeId && <small className="field-error">{errors.typeId}</small>}
+
+                            {selectedType && (
+                                <div className="seed-type-actions">
+                                    <button type="button" className="seed-type-link" onClick={handleEditType}>
+                                        Editar tipo
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="seed-type-link danger"
+                                        onClick={() => setTypeToDelete(selectedType)}
+                                    >
+                                        Eliminar tipo
+                                    </button>
+                                </div>
+                            )}
+
+                            {isTypePanelOpen && (
+                                <div className="seed-type-panel">
+                                    <input
+                                        type="text"
+                                        maxLength={50}
+                                        value={typeDraft.name}
+                                        onChange={handleTypeDraftChange('name')}
+                                        onKeyDown={handleTypeKeyDown}
+                                        placeholder="Nombre del tipo *"
+                                        aria-label="Nombre del tipo"
+                                        autoFocus
+                                    />
+                                    <input
+                                        type="text"
+                                        maxLength={255}
+                                        value={typeDraft.description}
+                                        onChange={handleTypeDraftChange('description')}
+                                        onKeyDown={handleTypeKeyDown}
+                                        placeholder="Descripción (opcional)"
+                                        aria-label="Descripción del tipo"
+                                    />
+                                    {editingTypeId && (
+                                        <small>
+                                            Al cambiar el nombre se actualiza en todas las semillas de este tipo.
+                                        </small>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="seed-button primary"
+                                        onClick={handleSaveType}
+                                        disabled={isSavingType}
+                                    >
+                                        {isSavingType
+                                            ? 'Guardando...'
+                                            : editingTypeId
+                                                ? 'Guardar cambios del tipo'
+                                                : 'Guardar tipo'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {typeError && (
+                                <small className="field-error" role="alert">
+                                    {typeError}
+                                </small>
+                            )}
+
+                            {typeInUseName && (
+                                <button
+                                    type="button"
+                                    className="seed-type-link"
+                                    onClick={() =>
+                                        window.open(
+                                            `/seeds?type=${encodeURIComponent(typeInUseName)}`,
+                                            '_blank',
+                                            'noopener'
+                                        )
+                                    }
+                                >
+                                    Ver semillas (se abre en otra pestaña)
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <label className="seed-field">
@@ -217,6 +435,18 @@ function SeedFormPage() {
                     </div>
                 </form>
             </div>
+
+            {typeToDelete && (
+                <ConfirmDialog
+                    title="Eliminar tipo de semilla"
+                    message="¿Seguro que desea eliminar este tipo? Solo se puede eliminar si no tiene semillas asociadas."
+                    details={getSeedTypeLabel(typeToDelete.name)}
+                    confirmLabel="Eliminar"
+                    isConfirming={isDeletingType}
+                    onConfirm={handleConfirmDeleteType}
+                    onCancel={() => setTypeToDelete(null)}
+                />
+            )}
         </div>
     );
 }
