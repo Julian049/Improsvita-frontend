@@ -14,6 +14,7 @@ function fromSeedResponse(seed, suppliers = []) {
         seedId: seed.id,
         name: seed.name,
         type: seed.type,
+        typeId: seed.typeId ?? null,
         description: seed.description ?? '',
         totalAvailable: seed.totalAvailable ?? 0,
         active: seed.active,
@@ -25,7 +26,7 @@ function fromSeedResponse(seed, suppliers = []) {
 function toSeedRequest(payload) {
     return {
         name: payload.name?.trim(),
-        type: payload.type,
+        typeId: Number(payload.typeId),
         description: payload.description?.trim() || null,
     };
 }

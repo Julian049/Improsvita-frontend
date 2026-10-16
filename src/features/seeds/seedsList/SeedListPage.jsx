@@ -1,9 +1,10 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Link, useNavigate} from 'react-router-dom';
+import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import {deleteSeed, getSeeds} from '../seedApi.js';
 import {getSuppliers} from '../../suppliers/supplierApi';
 import {getAllLots} from '../../lots/lotApi.js';
-import {SEED_TYPE_OPTIONS} from '../seedValidation.js';
+import {getSeedTypes} from '../../seedTypes/seedTypeApi.js';
+import {getSeedTypeLabel} from '../../seedTypes/seedTypeUtils.js';
 import {
     SEED_FILTER_INITIAL_STATE,
     SEED_FILTER_MODES,
@@ -16,18 +17,17 @@ import {getApiErrorMessage} from '../../../api/apiError.js';
 import SearchSelect from '../../../components/ui/SearchSelect.jsx';
 import './SeedList.css';
 
-const SEED_TYPE_LABELS = Object.fromEntries(
-    SEED_TYPE_OPTIONS.map((option) => [option.value, option.label])
-);
-
 const sumStock = (lots) => lots.reduce((total, lot) => total + (Number(lot.availableQuantity) || 0), 0);
 
 export const SeedListPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const initialType = searchParams.get('type') || '';
 
     const [seeds, setSeeds] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
     const [lots, setLots] = useState([]);
+    const [seedTypes, setSeedTypes] = useState([]);
     const [lotsLoaded, setLotsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
@@ -35,17 +35,24 @@ export const SeedListPage = () => {
     const [isFetchingSeeds, setIsFetchingSeeds] = useState(true);
     const [seedsError, setSeedsError] = useState(null);
 
-    const [draftMode, setDraftMode] = useState('');
-    const [draftValue, setDraftValue] = useState('');
+    const [draftMode, setDraftMode] = useState(initialType ? 'type' : '');
+    const [draftValue, setDraftValue] = useState(initialType);
     const [filterError, setFilterError] = useState('');
-    const [appliedFilter, setAppliedFilter] = useState(SEED_FILTER_INITIAL_STATE);
-
+    const [appliedFilter, setAppliedFilter] = useState(
+        initialType ? {mode: 'type', value: initialType} : SEED_FILTER_INITIAL_STATE
+    );
     const [page, setPage] = useState(1);
     const [selectedSeedId, setSelectedSeedId] = useState(null);
 
     const [seedToDelete, setSeedToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteMessage, setDeleteMessage] = useState(null);
+
+    useEffect(() => {
+        getSeedTypes()
+            .then(setSeedTypes)
+            .catch(() => setSeedTypes([]));
+    }, []);
 
     useEffect(() => {
         Promise.all([
@@ -205,9 +212,9 @@ export const SeedListPage = () => {
                         onChange={handleSelectValueChange}
                     >
                         <option value="">Selecciona un tipo</option>
-                        {SEED_TYPE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
+                            {seedTypes.map((seedType) => (
+                            <option key={seedType.seedTypeId} value={seedType.name}>
+                                {getSeedTypeLabel(seedType.name)}
                             </option>
                         ))}
                     </select>
@@ -339,7 +346,7 @@ export const SeedListPage = () => {
                                 <SeedCard
                                     key={seed.seedId}
                                     seed={seed}
-                                    typeLabel={SEED_TYPE_LABELS[seed.type] || seed.type}
+                                    typeLabel={getSeedTypeLabel(seed.type)}
                                     stock={sumStock(seedLots)}
                                     lotCount={seedLots.length}
                                     lotsLoaded={lotsLoaded}
@@ -377,7 +384,7 @@ export const SeedListPage = () => {
 
             <SeedDetailModal
                 seed={selectedSeed}
-                typeLabel={selectedSeed ? SEED_TYPE_LABELS[selectedSeed.type] || selectedSeed.type : ''}
+                typeLabel={selectedSeed ? getSeedTypeLabel(selectedSeed.type) : ''}
                 lots={selectedLots}
                 stock={sumStock(selectedLots)}
                 lotsLoaded={lotsLoaded}

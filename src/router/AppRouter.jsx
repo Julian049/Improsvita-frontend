@@ -19,6 +19,8 @@ import LocationListPage from '../features/locations/LocationListPage.jsx';
 import LocationFormPage from '../features/locations/LocationFormPage.jsx';
 import BedListPage from '../features/beds/BedListPage.jsx';
 import BedFormPage from '../features/beds/BedFormPage.jsx';
+import SeedTypeListPage from '../features/seedTypes/SeedTypeListPage.jsx';
+import SeedTypeFormPage from '../features/seedTypes/SeedTypeFormPage.jsx';
 
 function AppRouter() {
     return (
@@ -34,6 +36,9 @@ function AppRouter() {
                         <Route path="seeds" element={<SeedListPage />} />
                         <Route path="seeds/new" element={<SeedFormPage />} />
                         <Route path="seeds/:id/edit" element={<SeedFormPage />} />
+                        <Route path="seed-types" element={<SeedTypeListPage />} />
+                        <Route path="seed-types/new" element={<SeedTypeFormPage />} />
+                        <Route path="seed-types/:id/edit" element={<SeedTypeFormPage />} />
                         <Route path="lots" element={<LotListPage />} />
                         <Route path="lots/new" element={<LotFormPage />} />
                         <Route path="lots/:id/edit" element={<LotFormPage />} />
