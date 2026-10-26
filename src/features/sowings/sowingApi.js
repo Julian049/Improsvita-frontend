@@ -13,6 +13,7 @@ function toSowRequest(payload) {
         sowingDate: payload.sowingDate || null,
         expectedGerminationDate: payload.expectedGerminationDate || null,
         notes: payload.notes?.trim() || null,
+        status: payload.status || null,
     };
 }
 
