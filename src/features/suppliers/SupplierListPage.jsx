@@ -154,14 +154,18 @@ function SupplierListPage() {
                                                     </div>
                                                 </div>
 
-                                                {seedCountsLoaded && (
-                                                    <div className="supplier-foot">
-                                                        <div className="supplier-meta">
-                                                            Suministra {seedCount}{' '}
-                                                            {seedCount === 1 ? 'semilla' : 'semillas'}
-                                                        </div>
+                                                <div className="supplier-foot">
+                                                    <div className="supplier-meta">
+                                                        {seedCountsLoaded &&
+                                                            `Suministra ${seedCount} ${seedCount === 1 ? 'semilla' : 'semillas'}`}
                                                     </div>
-                                                )}
+                                                    <Link
+                                                        to={`/suppliers/${supplier.supplierId}/edit`}
+                                                        className="supplier-link"
+                                                    >
+                                                        Editar
+                                                    </Link>
+                                                </div>
                                             </article>
                                         );
                                     })}

@@ -293,6 +293,17 @@
     line-height: 1.35;
 }
 
+.supplier-link {
+    color: var(--supplier-green);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.supplier-link:hover {
+    text-decoration: underline;
+}
+
 .supplier-rail {
     position: sticky;
     top: 60px;
