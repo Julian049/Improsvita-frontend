@@ -1,0 +1,106 @@
+/* Reutiliza el tablero de siembras (SowingList.css); aquí solo lo propio de reservas. */
+
+.reservation-status-reserved {
+    --sowing-c: var(--sowing-teal);
+    --sowing-cb: var(--sowing-teal-bg);
+}
+
+.reservation-status-delivered {
+    --sowing-c: var(--sowing-green);
+    --sowing-cb: var(--sowing-green-bg);
+}
+
+.reservation-status-cancelled {
+    --sowing-c: var(--sowing-muted);
+    --sowing-cb: var(--sowing-surface);
+}
+
+.reservation-board {
+    grid-template-columns: repeat(var(--cols, 3), minmax(260px, 1fr));
+}
+
+.reservation-card {
+    cursor: default;
+}
+
+.reservation-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.reservation-search {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px 12px;
+    border: 1px solid var(--sowing-line);
+    border-radius: 8px;
+    background: var(--sowing-surface);
+    font-size: 14px;
+    font-family: inherit;
+    color: inherit;
+}
+
+.reservation-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.reservation-chip {
+    border: 1px solid var(--sowing-line);
+    background: var(--sowing-surface);
+    border-radius: 99px;
+    padding: 6px 14px;
+    cursor: pointer;
+    color: var(--sowing-muted);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.reservation-chip.on {
+    background: var(--sowing-green-bg);
+    color: var(--sowing-green);
+    border-color: var(--sowing-green-ring);
+}
+
+.reservation-search:focus,
+.reservation-chip:focus-visible {
+    outline: 2px solid var(--sowing-green-ring);
+    outline-offset: 1px;
+}
+
+.reservation-acts {
+    display: flex;
+    gap: 14px;
+    border-top: 1px solid var(--sowing-line);
+    padding-top: 10px;
+}
+
+.reservation-link {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--sowing-green);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.reservation-link:hover {
+    text-decoration: underline;
+}
+
+.reservation-link.danger {
+    color: var(--sowing-red);
+}
+
+@media (max-width: 640px) {
+    .reservation-board {
+        grid-template-columns: 1fr;
+    }
+}

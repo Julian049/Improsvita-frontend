@@ -4,6 +4,7 @@
 //   GET  /reservations/{id}
 //   POST /reservations       <- { clientId, seedlingId, quantity, reservationDate, deliveryDate }  (estado inicial RESERVED en el backend)
 //   PUT  /reservations/{id}  <- mismo cuerpo
+//   PUT  /reservations/{id}/status <- { status: 'CANCELLED' }  (igual que siembras; el backend libera el stock)
 import axiosClient from '../../api/axiosClient';
 import { toDateOnly } from '../../utils/dateUtils';
 import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
@@ -74,5 +75,15 @@ export async function updateReservation(id, payload) {
     }
 
     const { data } = await axiosClient.put(`/reservations/${id}`, toReservationRequest(payload));
+    return fromReservationResponse(data);
+}
+
+export async function cancelReservation(id) {
+    if (MOCK_CONFIG.reservations) {
+        await mockDelay();
+        return Object.assign(findMock(id), { status: 'CANCELLED' });
+    }
+
+    const { data } = await axiosClient.put(`/reservations/${id}/status`, { status: 'CANCELLED' });
     return fromReservationResponse(data);
 }
