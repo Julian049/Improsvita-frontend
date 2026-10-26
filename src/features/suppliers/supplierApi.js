@@ -29,6 +29,18 @@ export async function getSuppliers() {
     return data.map(fromSupplierResponse);
 }
 
+export async function getSupplierById(id) {
+    if (MOCK_CONFIG.suppliers) {
+        await mockDelay();
+        const supplier = MOCK_SUPPLIERS.find((s) => String(s.supplierId) === String(id));
+        if (!supplier) throw new Error('Proveedor no encontrado');
+        return supplier;
+    }
+
+    const { data } = await axiosClient.get(`/suppliers/${id}`);
+    return fromSupplierResponse(data);
+}
+
 export async function getSupplierByName(name) {
     try {
         const { data } = await axiosClient.get(`/suppliers/name/${encodeURIComponent(name)}`);
@@ -55,5 +67,10 @@ export async function getSeedCountsBySupplier(supplierIds) {
 
 export async function createSupplier(payload) {
     const { data } = await axiosClient.post('/suppliers', toSupplierRequest(payload));
+    return fromSupplierResponse(data);
+}
+
+export async function updateSupplier(id, payload) {
+    const { data } = await axiosClient.put(`/suppliers/${id}`, toSupplierRequest(payload));
     return fromSupplierResponse(data);
 }

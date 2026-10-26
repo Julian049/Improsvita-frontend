@@ -45,6 +45,7 @@ function AppRouter() {
                         <Route path="lots/trace" element={<LotTracePage />} />
                         <Route path="suppliers" element={<SupplierListPage />} />
                         <Route path="suppliers/new" element={<SupplierFormPage />} />
+                        <Route path="suppliers/:id/edit" element={<SupplierFormPage />} />
                         <Route path="sowings" element={<SowingListPage />} />
                         <Route path="sowings/new" element={<SowingFormPage />} />
                         <Route path="locations" element={<LocationListPage />} />
