@@ -1,23 +1,47 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
-import { createSupplier, getSuppliers } from './supplierApi';
+import { createSupplier, getSupplierById, getSuppliers, updateSupplier } from './supplierApi';
 import { getApiErrorMessage } from '../../api/apiError';
 import {
     FIELD_LABELS,
     SUPPLIER_FORM_INITIAL_VALUES,
     validateSupplierForm,
 } from './supplierValidation';
+import '../../components/ui/Catalog.css';
 import './SupplierForm.css';
 
 function SupplierFormPage() {
     const navigate = useNavigate();
     const goBack = useGoBack('/suppliers');
+    const { id } = useParams();
+    const isEditing = Boolean(id);
 
     const [values, setValues] = useState(SUPPLIER_FORM_INITIAL_VALUES);
     const [errors, setErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(isEditing);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState(null);
+
+    useEffect(() => {
+        if (!isEditing) return;
+
+        getSupplierById(id)
+            .then((supplier) => {
+                setValues({
+                    name: supplier.name || '',
+                    phone: supplier.phone || '',
+                    email: supplier.email || '',
+                });
+            })
+            .catch(() => {
+                setSubmitMessage({
+                    type: 'error',
+                    text: 'No se pudo cargar el proveedor solicitado.',
+                });
+            })
+            .finally(() => setIsLoading(false));
+    }, [id, isEditing]);
 
     function handleChange(field) {
         return (e) => {
@@ -55,7 +79,9 @@ function SupplierFormPage() {
             // Un correo repetido viola la restricción única y el backend responde 500 sin mensaje.
             const existing = await getSuppliers();
             const emailTaken = existing.some(
-                (supplier) => supplier.email?.toLowerCase() === payload.email.toLowerCase()
+                (supplier) =>
+                    String(supplier.supplierId) !== String(id) &&
+                    supplier.email?.toLowerCase() === payload.email.toLowerCase()
             );
             if (emailTaken) {
                 setErrors({ email: 'Ya existe un proveedor con este correo.' });
@@ -63,24 +89,35 @@ function SupplierFormPage() {
                 return;
             }
 
-            await createSupplier(payload);
+            await (isEditing ? updateSupplier(id, payload) : createSupplier(payload));
             goBack();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
-                text: getApiErrorMessage(err, 'No se pudo registrar el proveedor. Intenta nuevamente.'),
+                text: getApiErrorMessage(
+                    err,
+                    isEditing
+                        ? 'No se pudo actualizar el proveedor. Intenta nuevamente.'
+                        : 'No se pudo registrar el proveedor. Intenta nuevamente.'
+                ),
             });
         } finally {
             setIsSubmitting(false);
         }
     }
 
+    if (isLoading) {
+        return <div className="catalog-message">Cargando proveedor...</div>;
+    }
+
     return (
         <div className="supplier-form-page">
             <div className="supplier-form-card">
-                <h2>Registrar proveedor</h2>
+                <h2>{isEditing ? 'Modificar proveedor' : 'Registrar proveedor'}</h2>
                 <p className="supplier-form-subtitle">
-                    Registra un proveedor de semillas en la base de datos centralizada.
+                    {isEditing
+                        ? 'Actualiza los datos de contacto del proveedor.'
+                        : 'Registra un proveedor de semillas en la base de datos centralizada.'}
                 </p>
 
                 <form onSubmit={handleSubmit} className="supplier-form" noValidate>
@@ -137,7 +174,7 @@ function SupplierFormPage() {
                             Cancelar
                         </button>
                         <button type="submit" className="seed-button primary" disabled={isSubmitting}>
-                            {isSubmitting ? 'Guardando...' : 'Registrar'}
+                            {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Registrar'}
                         </button>
                     </div>
                 </form>
