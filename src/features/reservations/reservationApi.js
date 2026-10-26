@@ -1,8 +1,8 @@
 // SUPUESTO: el backend todavía no tiene reservas. Endpoints y forma de los datos asumidos
 // (ver "Reservas" en CLAUDE.md); revisar contra la API real cuando exista.
-//   GET  /reservations       -> [{ id, clientId, seedlingId, quantity, reservationDate, deliveryDate, status }]
+//   GET  /reservations       -> [{ id, clientId, sowingId, quantity, reservationDate, deliveryDate, status }]
 //   GET  /reservations/{id}
-//   POST /reservations       <- { clientId, seedlingId, quantity, reservationDate, deliveryDate }  (estado inicial RESERVED en el backend)
+//   POST /reservations       <- { clientId, sowingId, quantity, reservationDate, deliveryDate }  (estado inicial RESERVED en el backend)
 //   PUT  /reservations/{id}  <- mismo cuerpo
 //   PUT  /reservations/{id}/status <- { status: 'CANCELLED' }  (igual que siembras; el backend libera el stock)
 import axiosClient from '../../api/axiosClient';
@@ -14,7 +14,7 @@ function fromReservationResponse(reservation) {
     return {
         reservationId: reservation.id,
         clientId: reservation.clientId,
-        seedlingId: reservation.seedlingId,
+        sowingId: reservation.sowingId,
         quantity: Number(reservation.quantity) || 0,
         reservationDate: toDateOnly(reservation.reservationDate),
         deliveryDate: toDateOnly(reservation.deliveryDate),
@@ -25,7 +25,7 @@ function fromReservationResponse(reservation) {
 function toReservationRequest(payload) {
     return {
         clientId: payload.clientId,
-        seedlingId: payload.seedlingId,
+        sowingId: payload.sowingId,
         quantity: Number(payload.quantity),
         reservationDate: payload.reservationDate,
         deliveryDate: payload.deliveryDate,

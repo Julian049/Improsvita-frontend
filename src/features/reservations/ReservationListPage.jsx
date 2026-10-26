@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { cancelReservation, getReservations } from './reservationApi';
 import { RESERVATION_STATUS_OPTIONS } from './reservationValidation';
 import { filterReservations, getDeliveryTiming } from './reservationListUtils';
-import { getSeedlings, getSowingOrigins } from '../seedlings/seedlingApi';
+import { getSeedlings } from '../seedlings/seedlingApi';
 import { getSuppliers } from '../suppliers/supplierApi';
 import { getApiErrorMessage } from '../../api/apiError';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
@@ -67,21 +67,12 @@ function ReservationListPage() {
             // SUPUESTO: los clientes salen de Contactos (proveedores) hasta que exista un módulo de clientes.
             getSuppliers().catch(() => []),
             getSeedlings().catch(() => []),
-            getSowingOrigins().catch(() => new Map()),
         ])
-            .then(([reservationsData, clients, seedlings, origins]) => {
+            .then(([reservationsData, clients, sowings]) => {
                 setReservations(reservationsData);
                 setClientNameById(new Map(clients.map((c) => [String(c.supplierId), c.name])));
                 setPlantNameById(
-                    new Map(
-                        seedlings.map((s) => {
-                            const origin = origins.get(String(s.sowingId));
-                            return [
-                                String(s.seedlingId),
-                                `${origin?.seedName || 'Plántula'} · Lote ${origin?.lotNumber || '—'}`,
-                            ];
-                        })
-                    )
+                    new Map(sowings.map((s) => [String(s.sowingId), `${s.seedName || 'Siembra'} · Lote ${s.lotNumber || '—'}`]))
                 );
             })
             .catch(() => setLoadError('No se pudo cargar la lista de reservas.'))
@@ -93,7 +84,7 @@ function ReservationListPage() {
             reservations.map((r) => ({
                 ...r,
                 clientName: clientNameById.get(String(r.clientId)) ?? `Cliente #${r.clientId}`,
-                plantName: plantNameById.get(String(r.seedlingId)) ?? `Plántula #${r.seedlingId}`,
+                plantName: plantNameById.get(String(r.sowingId)) ?? `Siembra #${r.sowingId}`,
             })),
         [reservations, clientNameById, plantNameById]
     );

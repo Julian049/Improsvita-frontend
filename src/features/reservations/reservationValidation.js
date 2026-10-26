@@ -1,4 +1,5 @@
 import { getTodayDateString } from '../sowings/sowingUtils';
+import { getSeedlingCount } from '../seedlings/seedlingApi';
 
 // SUPUESTO: estados tomados del SRS (RF 5.1–5.4); los valores exactos dependen del backend.
 export const RESERVATION_STATUS_OPTIONS = [
@@ -15,23 +16,24 @@ export function getReservationStatusLabel(status) {
 
 export const RESERVATION_FIELD_LABELS = {
     clientId: 'Cliente',
-    seedlingId: 'Planta',
+    sowingId: 'Planta',
     quantity: 'Cantidad',
     reservationDate: 'Fecha de reserva',
     deliveryDate: 'Fecha prevista de entrega',
 };
 
-// SUPUESTO: plántulas disponibles = cantidad del registro menos las reservas activas (RESERVED) de otras reservas.
-export function getAvailableSeedlings(seedling, reservations, currentReservationId) {
+// SUPUESTO: disponibles = plántulas de la siembra (germinadas, o estimadas si no hay revisión)
+// menos las otras reservas activas (RESERVED) sobre esa siembra.
+export function getAvailableSeedlings(sowing, reservations, currentReservationId) {
     const reserved = reservations
         .filter(
             (r) =>
                 r.status === 'RESERVED' &&
-                String(r.seedlingId) === String(seedling.seedlingId) &&
+                String(r.sowingId) === String(sowing.sowingId) &&
                 String(r.reservationId) !== String(currentReservationId)
         )
         .reduce((sum, r) => sum + Number(r.quantity), 0);
-    return Math.max(0, seedling.quantity - reserved);
+    return Math.max(0, (getSeedlingCount(sowing) ?? 0) - reserved);
 }
 
 // SRS RF 5.1: cantidad ≤ stock disponible y fecha prevista de entrega ≥ fecha de reserva.
@@ -61,7 +63,7 @@ export function validateReservationForm(values, { maxQuantity } = {}) {
 export function getReservationFormInitialValues() {
     return {
         clientId: '',
-        seedlingId: '',
+        sowingId: '',
         quantity: '',
         reservationDate: getTodayDateString(),
         deliveryDate: '',

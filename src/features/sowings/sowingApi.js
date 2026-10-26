@@ -23,6 +23,8 @@ function fromSowingResponse(sowing) {
         lotId: sowing.lotId,
         bedId: sowing.bedId,
         quantitySown: Number(sowing.quantitySown) || 0,
+        estimatedSeedlings: sowing.estimatedSeedlings ?? null,
+        germinatedQuantity: sowing.germinatedQuantity ?? null,
         sowingDate: toDateOnly(sowing.sowingDate),
         expectedGerminationDate: toDateOnly(sowing.expectedGerminationDate),
         status: sowing.status,
