@@ -11,7 +11,8 @@ const MAIN_LINKS = [
 ];
 
 const SECONDARY_LINKS = [
-    // { to: '/reservations', label: 'Reservas' },
+    // SUPUESTO: módulo sin backend todavía (usa datos de prueba).
+    { to: '/reservations', label: 'Reservas' },
     // { to: '/sales', label: 'Ventas' },
     { to: '/suppliers', label: 'Contactos' },
     { to: '/seed-types', label: 'Tipos de semilla' },

@@ -21,6 +21,8 @@ import BedListPage from '../features/beds/BedListPage.jsx';
 import BedFormPage from '../features/beds/BedFormPage.jsx';
 import SeedTypeListPage from '../features/seedTypes/SeedTypeListPage.jsx';
 import SeedTypeFormPage from '../features/seedTypes/SeedTypeFormPage.jsx';
+import ReservationFormPage from '../features/reservations/ReservationFormPage.jsx';
+import ReservationListPage from '../features/reservations/ReservationListPage.jsx';
 
 function AppRouter() {
     return (
@@ -56,7 +58,9 @@ function AppRouter() {
                         <Route path="beds/:id/edit" element={<BedFormPage />} />
                         <Route path="seedlings" element={<SeedlingListPage />} />
                         <Route path="seedlings/:id/edit" element={<SeedlingFormPage />} />
-                        <Route path="reservations" element={<h1>Reservas</h1>} />
+                        <Route path="reservations" element={<ReservationListPage />} />
+                        <Route path="reservations/new" element={<ReservationFormPage />} />
+                        <Route path="reservations/:id/edit" element={<ReservationFormPage />} />
                         <Route path="sales" element={<h1>Ventas</h1>} />
 
                         <Route path="*" element={<Navigate to="/" replace />} />
