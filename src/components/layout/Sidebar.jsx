@@ -5,7 +5,6 @@ const MAIN_LINKS = [
     { to: '/', label: 'Panel principal', end: true },
     { to: '/seeds', label: 'Semillas' },
     { to: '/lots', label: 'Lotes' },
-    // SUPUESTO: módulo sin backend todavía (usa datos de prueba).
     { to: '/seedlings', label: 'Plántulas' },
     { to: '/sowings', label: 'Siembras' },
 ];

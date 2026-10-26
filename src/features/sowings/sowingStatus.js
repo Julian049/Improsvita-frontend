@@ -14,6 +14,9 @@ export const SOWING_STATUS_OPTIONS = [
     { value: SOWING_STATUS.CANCELLED, label: 'Cancelada' },
 ];
 
+// Estados con los que el backend permite registrar una siembra (POST /sowings).
+export const SOWING_INITIAL_STATUSES = [SOWING_STATUS.PLANNED, SOWING_STATUS.IN_PROGRESS];
+
 export const SOWING_STATUS_FLOW = [
     SOWING_STATUS.PLANNED,
     SOWING_STATUS.IN_PROGRESS,

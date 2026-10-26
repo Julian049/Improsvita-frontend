@@ -9,7 +9,8 @@ import {
     getReservationStatusLabel,
     validateReservationForm,
 } from './reservationValidation';
-import { getSeedlings, getSowingOrigins } from '../seedlings/seedlingApi';
+import { getSeedlings } from '../seedlings/seedlingApi';
+import { SOWING_STATUS } from '../sowings/sowingStatus';
 import { getSuppliers } from '../suppliers/supplierApi';
 import { getApiErrorMessage } from '../../api/apiError';
 import { formatQty } from '../../utils/numberUtils';
@@ -26,7 +27,6 @@ function ReservationFormPage() {
     const [status, setStatus] = useState('RESERVED');
     const [clients, setClients] = useState([]);
     const [seedlings, setSeedlings] = useState([]);
-    const [origins, setOrigins] = useState(new Map());
     const [reservations, setReservations] = useState([]);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(true);
@@ -39,19 +39,17 @@ function ReservationFormPage() {
             // SUPUESTO: no existe módulo de clientes; el SRS los incluye en Contactos, que hoy solo tiene proveedores.
             getSuppliers(),
             getSeedlings(),
-            getSowingOrigins().catch(() => new Map()),
             getReservations(),
             isEditing ? getReservationById(id) : null,
         ])
-            .then(([clientsData, seedlingsData, originsData, reservationsData, reservation]) => {
+            .then(([clientsData, seedlingsData, reservationsData, reservation]) => {
                 setClients(clientsData);
                 setSeedlings(seedlingsData);
-                setOrigins(originsData);
                 setReservations(reservationsData);
                 if (reservation) {
                     setValues({
                         clientId: String(reservation.clientId ?? ''),
-                        seedlingId: String(reservation.seedlingId ?? ''),
+                        sowingId: String(reservation.sowingId ?? ''),
                         quantity: String(reservation.quantity),
                         reservationDate: reservation.reservationDate || '',
                         deliveryDate: reservation.deliveryDate || '',
@@ -69,19 +67,23 @@ function ReservationFormPage() {
     const seedlingOptions = useMemo(
         () =>
             seedlings
-                .filter((s) => s.status !== 'DISCARDED' || String(s.seedlingId) === values.seedlingId)
+                // Las siembras fallidas o canceladas no tienen plántulas que reservar.
+                .filter(
+                    (s) =>
+                        ![SOWING_STATUS.FAILED, SOWING_STATUS.CANCELLED].includes(s.status) ||
+                        String(s.sowingId) === values.sowingId
+                )
                 .map((s) => {
-                    const origin = origins.get(String(s.sowingId));
                     const available = getAvailableSeedlings(s, reservations, id);
                     return {
-                        value: s.seedlingId,
-                        label: `${origin?.seedName || 'Plántula'} · Lote ${origin?.lotNumber || '—'} · Cama ${origin?.bedCode || '—'} (${formatQty(available)} disponibles)`,
+                        value: s.sowingId,
+                        label: `${s.seedName || 'Siembra'} · Lote ${s.lotNumber || '—'} · Cama ${s.bedCode || '—'} (${formatQty(available)} disponibles)`,
                         available,
                     };
                 }),
-        [seedlings, origins, reservations, id, values.seedlingId]
+        [seedlings, reservations, id, values.sowingId]
     );
-    const maxQuantity = seedlingOptions.find((o) => String(o.value) === values.seedlingId)?.available;
+    const maxQuantity = seedlingOptions.find((o) => String(o.value) === values.sowingId)?.available;
 
     function handleChange(field) {
         return (e) => {
@@ -164,14 +166,14 @@ function ReservationFormPage() {
                         <label className="catalog-field">
                             <span>Planta *</span>
                             <SearchSelect
-                                value={values.seedlingId}
-                                onChange={handleChange('seedlingId')}
+                                value={values.sowingId}
+                                onChange={handleChange('sowingId')}
                                 disabled={isLocked}
                                 placeholder="Busca una planta"
                                 aria-label="Planta"
                                 options={seedlingOptions}
                             />
-                            {errors.seedlingId && <small className="field-error">{errors.seedlingId}</small>}
+                            {errors.sowingId && <small className="field-error">{errors.sowingId}</small>}
                         </label>
 
                         <label className="catalog-field">

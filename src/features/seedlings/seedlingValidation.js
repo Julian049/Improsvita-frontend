@@ -1,53 +1,43 @@
-// SUPUESTO: estados y reglas de plántulas definidos en el frontend; el backend aún no existe.
-export const SEEDLING_STATUS_OPTIONS = [
-    { value: 'GROWING', label: 'En desarrollo' },
-    { value: 'READY', label: 'Lista para entrega' },
-    { value: 'DISCARDED', label: 'Descartada' },
-];
+import { getTodayDateString } from '../sowings/sowingUtils';
 
-const SEEDLING_STATUS_LABELS = Object.fromEntries(SEEDLING_STATUS_OPTIONS.map((o) => [o.value, o.label]));
+export const REVIEW_NOTES_MAX = 1000;
 
-export function getSeedlingStatusLabel(status) {
-    return SEEDLING_STATUS_LABELS[status] || status || '—';
-}
-
-export const SEEDLING_FIELD_LABELS = {
-    quantity: 'Cantidad',
-    readyDate: 'Fecha lista',
-    status: 'Estado',
-    notes: 'Notas',
+export const REVIEW_FIELD_LABELS = {
+    reviewDate: 'Fecha de revisión',
+    germinatedQuantity: 'Cantidad germinada',
+    notes: 'Observaciones',
 };
 
-export const SEEDLING_NOTES_MAX = 300;
-
-function isEmpty(value) {
-    return value === undefined || value === null || String(value).trim() === '';
-}
-
-// SUPUESTO: no puede haber más plántulas que semillas sembradas en su siembra de origen.
-export function validateSeedlingForm(values, { maxQuantity } = {}) {
+// Mismas reglas que SowingReviewService del backend.
+export function validateReviewForm(values, { quantitySown, sowingDate } = {}) {
     const errors = {};
 
-    if (isEmpty(values.quantity)) {
-        errors.quantity = 'Este campo es obligatorio.';
+    if (String(values.germinatedQuantity ?? '').trim() === '') {
+        errors.germinatedQuantity = 'Este campo es obligatorio.';
     } else {
-        const quantity = Number(values.quantity);
+        const quantity = Number(values.germinatedQuantity);
         if (!Number.isInteger(quantity) || quantity < 0) {
-            errors.quantity = 'La cantidad debe ser un número entero de 0 o más.';
-        } else if (maxQuantity != null && quantity > maxQuantity) {
-            errors.quantity = `No puede superar lo sembrado (${maxQuantity}).`;
+            errors.germinatedQuantity = 'Debe ser un número entero de 0 o más.';
+        } else if (quantitySown != null && quantity > quantitySown) {
+            errors.germinatedQuantity = `No puede superar lo sembrado (${quantitySown}).`;
         }
     }
 
-    if (!SEEDLING_STATUS_LABELS[values.status]) errors.status = 'Selecciona un estado.';
-    if ((values.notes ?? '').length > SEEDLING_NOTES_MAX) errors.notes = `Máximo ${SEEDLING_NOTES_MAX} caracteres.`;
+    if (!values.reviewDate) {
+        errors.reviewDate = 'Este campo es obligatorio.';
+    } else if (values.reviewDate > getTodayDateString()) {
+        errors.reviewDate = 'No puede ser una fecha futura.';
+    } else if (sowingDate && values.reviewDate < sowingDate) {
+        errors.reviewDate = 'No puede ser anterior a la fecha de siembra.';
+    }
+
+    if ((values.notes ?? '').trim().length > REVIEW_NOTES_MAX) {
+        errors.notes = `Máximo ${REVIEW_NOTES_MAX} caracteres.`;
+    }
 
     return errors;
 }
 
-export const SEEDLING_FORM_INITIAL_VALUES = {
-    quantity: '',
-    readyDate: '',
-    status: 'GROWING',
-    notes: '',
-};
+export function getReviewFormInitialValues() {
+    return { reviewDate: getTodayDateString(), germinatedQuantity: '', notes: '' };
+}

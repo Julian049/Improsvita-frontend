@@ -1,102 +1,73 @@
-// SUPUESTO: el backend todavía no tiene plántulas. Endpoints y forma de los datos asumidos
-// (ver "Plántulas" en CLAUDE.md); revisar contra la API real cuando exista.
-//   GET    /seedlings        -> [{ id, sowingId, quantity, readyDate, status, notes }]
-//   GET    /seedlings/{id}
-//   PUT    /seedlings/{id}   <- { quantity, readyDate, status, notes }
-//   DELETE /seedlings/{id}
+// El backend no tiene una entidad de plántulas: son datos de cada siembra. GET /sowings trae
+// estimatedSeedlings (sembradas × % de germinación del lote) y germinatedQuantity (última revisión),
+// y las revisiones de germinación viven en /sowings/{id}/reviews.
 import axiosClient from '../../api/axiosClient';
 import { toDateOnly } from '../../utils/dateUtils';
 import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
-import { MOCK_SEEDLINGS } from '../../mocks/seedlingMocks';
 import { getAllSowings } from '../sowings/sowingApi';
 import { getAllLots } from '../lots/lotApi';
 import { getAllSeeds } from '../seeds/seedApi';
 import { getBeds } from '../beds/bedApi';
 
-function fromSeedlingResponse(seedling) {
+const mockReviews = [];
+
+function fromReviewResponse(review) {
     return {
-        seedlingId: seedling.id,
-        sowingId: seedling.sowingId,
-        quantity: Number(seedling.quantity) || 0,
-        readyDate: toDateOnly(seedling.readyDate),
-        status: seedling.status,
-        notes: seedling.notes ?? '',
+        reviewId: review.id,
+        sowingId: review.sowingId,
+        reviewDate: toDateOnly(review.reviewDate),
+        germinatedQuantity: Number(review.germinatedQuantity) || 0,
+        notes: review.notes ?? '',
     };
 }
 
-function toSeedlingRequest(payload) {
-    return {
-        quantity: Number(payload.quantity),
-        readyDate: payload.readyDate || null,
-        status: payload.status,
-        notes: payload.notes?.trim() || null,
-    };
+// Plántulas disponibles: las germinadas si ya hay revisión; si no, la estimación del lote.
+export function getSeedlingCount(sowing) {
+    return sowing.germinatedQuantity ?? sowing.estimatedSeedlings ?? null;
 }
 
-const findMock = (id) => MOCK_SEEDLINGS.find((s) => String(s.seedlingId) === String(id));
-
+// Cada siembra con los nombres de su semilla, lote y cama.
 export async function getSeedlings() {
-    if (MOCK_CONFIG.seedlings) {
-        await mockDelay();
-        return [...MOCK_SEEDLINGS];
-    }
-
-    const { data } = await axiosClient.get('/seedlings');
-    return data.map(fromSeedlingResponse);
-}
-
-export async function getSeedlingById(id) {
-    if (MOCK_CONFIG.seedlings) {
-        await mockDelay();
-        const seedling = findMock(id);
-        if (!seedling) throw new Error('Plántula no encontrada');
-        return seedling;
-    }
-
-    const { data } = await axiosClient.get(`/seedlings/${id}`);
-    return fromSeedlingResponse(data);
-}
-
-export async function updateSeedling(id, payload) {
-    if (MOCK_CONFIG.seedlings) {
-        await mockDelay();
-        return Object.assign(findMock(id), toSeedlingRequest(payload));
-    }
-
-    const { data } = await axiosClient.put(`/seedlings/${id}`, toSeedlingRequest(payload));
-    return fromSeedlingResponse(data);
-}
-
-export async function deleteSeedling(id) {
-    if (MOCK_CONFIG.seedlings) {
-        await mockDelay();
-        MOCK_SEEDLINGS.splice(MOCK_SEEDLINGS.indexOf(findMock(id)), 1);
-        return;
-    }
-
-    await axiosClient.delete(`/seedlings/${id}`);
-}
-
-// Origen de cada plántula: siembra -> lote -> semilla, y la cama. Devuelve un Map por sowingId.
-export async function getSowingOrigins() {
     const [sowings, lots, seeds, beds] = await Promise.all([getAllSowings(), getAllLots(), getAllSeeds(), getBeds()]);
     const lotById = new Map(lots.map((l) => [String(l.lotId), l]));
     const seedNameById = new Map(seeds.map((s) => [String(s.seedId), s.name]));
     const bedCodeById = new Map(beds.map((b) => [String(b.bedId), b.code]));
 
-    return new Map(
-        sowings.map((s) => {
-            const lot = lotById.get(String(s.lotId));
-            return [
-                String(s.sowingId),
-                {
-                    seedName: lot ? seedNameById.get(String(lot.seedId)) ?? '' : '',
-                    lotNumber: lot?.lotNumber ?? '',
-                    bedCode: bedCodeById.get(String(s.bedId)) ?? '',
-                    sowingDate: s.sowingDate,
-                    quantitySown: s.quantitySown,
-                },
-            ];
-        })
-    );
+    return sowings.map((sowing) => {
+        const lot = lotById.get(String(sowing.lotId));
+        return {
+            ...sowing,
+            seedName: lot ? seedNameById.get(String(lot.seedId)) ?? '' : '',
+            lotNumber: lot?.lotNumber ?? '',
+            bedCode: bedCodeById.get(String(sowing.bedId)) ?? '',
+        };
+    });
+}
+
+export async function getSowingReviews(sowingId) {
+    if (MOCK_CONFIG.sowings) {
+        await mockDelay();
+        return mockReviews.filter((r) => String(r.sowingId) === String(sowingId));
+    }
+
+    const { data } = await axiosClient.get(`/sowings/${sowingId}/reviews`);
+    return data.map(fromReviewResponse);
+}
+
+export async function createSowingReview(sowingId, payload) {
+    const request = {
+        reviewDate: payload.reviewDate || null,
+        germinatedQuantity: Number(payload.germinatedQuantity),
+        notes: payload.notes?.trim() || null,
+    };
+
+    if (MOCK_CONFIG.sowings) {
+        await mockDelay();
+        const review = { reviewId: `rv-${Date.now()}`, sowingId, ...request, notes: request.notes ?? '' };
+        mockReviews.push(review);
+        return review;
+    }
+
+    const { data } = await axiosClient.post(`/sowings/${sowingId}/reviews`, request);
+    return fromReviewResponse(data);
 }

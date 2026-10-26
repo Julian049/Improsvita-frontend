@@ -8,7 +8,7 @@ import SeedListPage from '../features/seeds/seedsList/SeedListPage.jsx';
 import LotFormPage from '../features/lots/lotsForm/LotFormPage.jsx';
 import LotListPage from '../features/lots/lotsList/LotListPage.jsx';
 import SeedlingListPage from '../features/seedlings/SeedlingListPage.jsx';
-import SeedlingFormPage from '../features/seedlings/SeedlingFormPage.jsx';
+import SeedlingReviewPage from '../features/seedlings/SeedlingReviewPage.jsx';
 import DashboardPage from '../features/dashboard/DashboardPage.jsx';
 import LotTracePage from '../features/lots/lotTrace/LotTracePage.jsx';
 import SupplierListPage from '../features/suppliers/SupplierListPage';
@@ -57,7 +57,7 @@ function AppRouter() {
                         <Route path="beds/new" element={<BedFormPage />} />
                         <Route path="beds/:id/edit" element={<BedFormPage />} />
                         <Route path="seedlings" element={<SeedlingListPage />} />
-                        <Route path="seedlings/:id/edit" element={<SeedlingFormPage />} />
+                        <Route path="seedlings/:id/reviews" element={<SeedlingReviewPage />} />
                         <Route path="reservations" element={<ReservationListPage />} />
                         <Route path="reservations/new" element={<ReservationFormPage />} />
                         <Route path="reservations/:id/edit" element={<ReservationFormPage />} />
