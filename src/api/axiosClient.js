@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getToken, clearToken } from './tokenStorage';
 
-const BASE_URL =  import.meta.env.VITE_API_URL
+const BASE_URL = import.meta.env.VITE_API_URL || '/improsvita/api';
 
 const axiosClient = axios.create({
     baseURL: BASE_URL,

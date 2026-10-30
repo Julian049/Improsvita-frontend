@@ -1,60 +1,59 @@
 import { getTodayDateString } from '../sowings/sowingUtils';
-import { getSeedlingCount } from '../seedlings/seedlingApi';
 
-// SUPUESTO: estados tomados del SRS (RF 5.1–5.4); los valores exactos dependen del backend.
+export const RESERVATION_STATUS = {
+    PENDING: 'PENDING',
+    CONFIRMED: 'CONFIRMED',
+    DELIVERED: 'DELIVERED',
+    CANCELLED: 'CANCELLED',
+};
+
 export const RESERVATION_STATUS_OPTIONS = [
-    { value: 'RESERVED', label: 'Reservada' },
-    { value: 'DELIVERED', label: 'Entregada' },
-    { value: 'CANCELLED', label: 'Cancelada' },
+    { value: RESERVATION_STATUS.PENDING, label: 'Pendiente' },
+    { value: RESERVATION_STATUS.CONFIRMED, label: 'Confirmada' },
+    { value: RESERVATION_STATUS.DELIVERED, label: 'Entregada' },
+    { value: RESERVATION_STATUS.CANCELLED, label: 'Cancelada' },
 ];
 
-const RESERVATION_STATUS_LABELS = Object.fromEntries(RESERVATION_STATUS_OPTIONS.map((o) => [o.value, o.label]));
+const RESERVATION_STATUS_LABELS = Object.fromEntries(
+    RESERVATION_STATUS_OPTIONS.map((option) => [option.value, option.label])
+);
 
 export function getReservationStatusLabel(status) {
     return RESERVATION_STATUS_LABELS[status] || status || '—';
 }
 
-export const RESERVATION_FIELD_LABELS = {
-    clientId: 'Cliente',
-    sowingId: 'Planta',
-    quantity: 'Cantidad',
-    reservationDate: 'Fecha de reserva',
-    deliveryDate: 'Fecha prevista de entrega',
-};
+export const EDITABLE_STATUS_OPTIONS = RESERVATION_STATUS_OPTIONS.filter(
+    (option) => option.value !== RESERVATION_STATUS.CANCELLED
+);
 
-// SUPUESTO: disponibles = plántulas de la siembra (germinadas, o estimadas si no hay revisión)
-// menos las otras reservas activas (RESERVED) sobre esa siembra.
-export function getAvailableSeedlings(sowing, reservations, currentReservationId) {
-    const reserved = reservations
-        .filter(
-            (r) =>
-                r.status === 'RESERVED' &&
-                String(r.sowingId) === String(sowing.sowingId) &&
-                String(r.reservationId) !== String(currentReservationId)
-        )
-        .reduce((sum, r) => sum + Number(r.quantity), 0);
-    return Math.max(0, (getSeedlingCount(sowing) ?? 0) - reserved);
+export function isLiveReservation(reservation) {
+    return (
+        reservation.active !== false &&
+        reservation.status !== RESERVATION_STATUS.CANCELLED
+    );
 }
 
-// SRS RF 5.1: cantidad ≤ stock disponible y fecha prevista de entrega ≥ fecha de reserva.
-export function validateReservationForm(values, { maxQuantity } = {}) {
+export const RESERVATION_FIELD_LABELS = {
+    clientId: 'Cliente',
+    sowingId: 'Siembra',
+    totalPrice: 'Precio total',
+    reservationDate: 'Fecha de reserva',
+};
+
+export function validateReservationForm(values) {
     const errors = {};
 
     Object.keys(RESERVATION_FIELD_LABELS).forEach((field) => {
-        if (String(values[field] ?? '').trim() === '') errors[field] = 'Este campo es obligatorio.';
+        if (String(values[field] ?? '').trim() === '') {
+            errors[field] = 'Este campo es obligatorio.';
+        }
     });
 
-    if (!errors.quantity) {
-        const quantity = Number(values.quantity);
-        if (!Number.isInteger(quantity) || quantity <= 0) {
-            errors.quantity = 'La cantidad debe ser un número entero mayor a 0.';
-        } else if (maxQuantity != null && quantity > maxQuantity) {
-            errors.quantity = `No puede superar las plántulas disponibles (${maxQuantity}).`;
+    if (!errors.totalPrice) {
+        const totalPrice = Number(values.totalPrice);
+        if (!Number.isFinite(totalPrice) || totalPrice < 0) {
+            errors.totalPrice = 'El precio total debe ser un número mayor o igual a 0.';
         }
-    }
-
-    if (!errors.reservationDate && !errors.deliveryDate && values.deliveryDate < values.reservationDate) {
-        errors.deliveryDate = 'Debe ser igual o posterior a la fecha de reserva.';
     }
 
     return errors;
@@ -64,8 +63,9 @@ export function getReservationFormInitialValues() {
     return {
         clientId: '',
         sowingId: '',
-        quantity: '',
+        totalPrice: '',
         reservationDate: getTodayDateString(),
-        deliveryDate: '',
+        notes: '',
+        status: RESERVATION_STATUS.PENDING,
     };
 }

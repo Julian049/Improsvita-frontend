@@ -1,17 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
-import { createReservation, getReservationById, getReservations, updateReservation } from './reservationApi';
 import {
+    createReservation,
+    getReservationById,
+    getReservations,
+    updateReservation,
+} from './reservationApi';
+import {
+    EDITABLE_STATUS_OPTIONS,
     RESERVATION_FIELD_LABELS,
-    getAvailableSeedlings,
+    RESERVATION_STATUS,
     getReservationFormInitialValues,
     getReservationStatusLabel,
+    isLiveReservation,
     validateReservationForm,
 } from './reservationValidation';
 import { getSeedlings } from '../seedlings/seedlingApi';
+import { getClients } from '../clients/clientApi';
 import { SOWING_STATUS } from '../sowings/sowingStatus';
-import { getSuppliers } from '../suppliers/supplierApi';
 import { getApiErrorMessage } from '../../api/apiError';
 import { formatQty } from '../../utils/numberUtils';
 import SearchSelect from '../../components/ui/SearchSelect.jsx';
@@ -24,7 +31,6 @@ function ReservationFormPage() {
     const goBack = useGoBack('/reservations');
 
     const [values, setValues] = useState(getReservationFormInitialValues);
-    const [status, setStatus] = useState('RESERVED');
     const [clients, setClients] = useState([]);
     const [seedlings, setSeedlings] = useState([]);
     const [reservations, setReservations] = useState([]);
@@ -36,8 +42,7 @@ function ReservationFormPage() {
 
     useEffect(() => {
         Promise.all([
-            // SUPUESTO: no existe módulo de clientes; el SRS los incluye en Contactos, que hoy solo tiene proveedores.
-            getSuppliers(),
+            getClients(),
             getSeedlings(),
             getReservations(),
             isEditing ? getReservationById(id) : null,
@@ -50,40 +55,58 @@ function ReservationFormPage() {
                     setValues({
                         clientId: String(reservation.clientId ?? ''),
                         sowingId: String(reservation.sowingId ?? ''),
-                        quantity: String(reservation.quantity),
+                        totalPrice: String(reservation.totalPrice ?? ''),
                         reservationDate: reservation.reservationDate || '',
-                        deliveryDate: reservation.deliveryDate || '',
+                        notes: reservation.notes || '',
+                        status: reservation.status || RESERVATION_STATUS.PENDING,
                     });
-                    setStatus(reservation.status);
                 }
             })
-            .catch(() => setLoadError(isEditing ? 'No se pudo cargar la reserva.' : 'No se pudieron cargar los datos del formulario.'))
+            .catch(() =>
+                setLoadError(
+                    isEditing
+                        ? 'No se pudo cargar la reserva.'
+                        : 'No se pudieron cargar los datos del formulario.'
+                )
+            )
             .finally(() => setIsLoading(false));
     }, [id, isEditing]);
 
-    // SRS RF 5.2: solo se editan reservas activas (no entregadas ni canceladas).
-    const isLocked = isEditing && status !== 'RESERVED';
+    const status = values.status;
+    const isLocked =
+        isEditing &&
+        (status === RESERVATION_STATUS.DELIVERED || status === RESERVATION_STATUS.CANCELLED);
 
-    const seedlingOptions = useMemo(
+    const sowingOptions = useMemo(
         () =>
             seedlings
-                // Las siembras fallidas o canceladas no tienen plántulas que reservar.
                 .filter(
-                    (s) =>
-                        ![SOWING_STATUS.FAILED, SOWING_STATUS.CANCELLED].includes(s.status) ||
-                        String(s.sowingId) === values.sowingId
+                    (sowing) =>
+                        [SOWING_STATUS.PLANNED, SOWING_STATUS.IN_PROGRESS].includes(sowing.status) ||
+                        String(sowing.sowingId) === values.sowingId
                 )
-                .map((s) => {
-                    const available = getAvailableSeedlings(s, reservations, id);
+                .filter(
+                    (sowing) =>
+                        !reservations.some(
+                            (reservation) =>
+                                isLiveReservation(reservation) &&
+                                String(reservation.sowingId) === String(sowing.sowingId) &&
+                                String(reservation.reservationId) !== String(id)
+                        ) || String(sowing.sowingId) === values.sowingId
+                )
+                .map((sowing) => {
+                    const seedlingsAvailable = sowing.germinatedQuantity ?? sowing.estimatedSeedlings;
+                    const seedlingsText =
+                        seedlingsAvailable != null
+                            ? ` · ${formatQty(seedlingsAvailable)} plántulas`
+                            : '';
                     return {
-                        value: s.sowingId,
-                        label: `${s.seedName || 'Siembra'} · Lote ${s.lotNumber || '—'} · Cama ${s.bedCode || '—'} (${formatQty(available)} disponibles)`,
-                        available,
+                        value: sowing.sowingId,
+                        label: `${sowing.seedName || 'Siembra'} · Lote ${sowing.lotNumber || '—'} · Cama ${sowing.bedCode || '—'}${seedlingsText}`,
                     };
                 }),
         [seedlings, reservations, id, values.sowingId]
     );
-    const maxQuantity = seedlingOptions.find((o) => String(o.value) === values.sowingId)?.available;
 
     function handleChange(field) {
         return (e) => {
@@ -96,10 +119,12 @@ function ReservationFormPage() {
         e.preventDefault();
         setSubmitMessage(null);
 
-        const validationErrors = validateReservationForm(values, { maxQuantity });
+        const validationErrors = validateReservationForm(values);
         setErrors(validationErrors);
         if (Object.keys(validationErrors).length > 0) {
-            const fields = Object.keys(validationErrors).map((f) => RESERVATION_FIELD_LABELS[f] || f).join(', ');
+            const fields = Object.keys(validationErrors)
+                .map((field) => RESERVATION_FIELD_LABELS[field] || field)
+                .join(', ');
             setSubmitMessage({ type: 'error', text: `Revisa los campos marcados: ${fields}.` });
             return;
         }
@@ -139,12 +164,13 @@ function ReservationFormPage() {
                 <p className="catalog-form-subtitle">
                     {isEditing
                         ? `Estado: ${getReservationStatusLabel(status)}`
-                        : 'La reserva se registra con estado "Reservada".'}
+                        : 'La reserva se registra con estado "Pendiente".'}
                 </p>
 
                 {isLocked && (
                     <div className="catalog-form-message error">
-                        Esta reserva está {getReservationStatusLabel(status).toLowerCase()} y no se puede modificar.
+                        Esta reserva está {getReservationStatusLabel(status).toLowerCase()} y no se puede
+                        modificar.
                     </div>
                 )}
 
@@ -158,69 +184,95 @@ function ReservationFormPage() {
                                 disabled={isLocked}
                                 placeholder="Busca un cliente"
                                 aria-label="Cliente"
-                                options={clients.map((c) => ({ value: c.supplierId, label: c.name }))}
+                                options={clients.map((client) => ({
+                                    value: client.clientId,
+                                    label: client.name,
+                                }))}
                             />
                             {errors.clientId && <small className="field-error">{errors.clientId}</small>}
                         </label>
 
                         <label className="catalog-field">
-                            <span>Planta *</span>
+                            <span>Siembra *</span>
                             <SearchSelect
                                 value={values.sowingId}
                                 onChange={handleChange('sowingId')}
                                 disabled={isLocked}
-                                placeholder="Busca una planta"
-                                aria-label="Planta"
-                                options={seedlingOptions}
+                                placeholder="Busca una siembra"
+                                aria-label="Siembra"
+                                options={sowingOptions}
                             />
                             {errors.sowingId && <small className="field-error">{errors.sowingId}</small>}
                         </label>
 
                         <label className="catalog-field">
-                            <span>Cantidad *</span>
+                            <span>Precio total *</span>
                             <input
                                 type="number"
-                                min="1"
-                                step="1"
-                                inputMode="numeric"
+                                min="0"
+                                step="0.01"
+                                inputMode="decimal"
                                 className="no-spinner"
-                                value={values.quantity}
-                                onChange={handleChange('quantity')}
+                                value={values.totalPrice}
+                                onChange={handleChange('totalPrice')}
                             />
-                            {errors.quantity ? (
-                                <small className="field-error">{errors.quantity}</small>
-                            ) : (
-                                maxQuantity != null && <small>{`Máximo ${formatQty(maxQuantity)} disponibles.`}</small>
-                            )}
+                            {errors.totalPrice && <small className="field-error">{errors.totalPrice}</small>}
                         </label>
 
                         <label className="catalog-field">
                             <span>Fecha de reserva *</span>
-                            <input type="date" value={values.reservationDate} onChange={handleChange('reservationDate')} />
-                            {errors.reservationDate && <small className="field-error">{errors.reservationDate}</small>}
-                        </label>
-
-                        <label className="catalog-field">
-                            <span>Fecha prevista de entrega *</span>
                             <input
                                 type="date"
-                                min={values.reservationDate || undefined}
-                                value={values.deliveryDate}
-                                onChange={handleChange('deliveryDate')}
+                                value={values.reservationDate}
+                                onChange={handleChange('reservationDate')}
                             />
-                            {errors.deliveryDate && <small className="field-error">{errors.deliveryDate}</small>}
+                            {errors.reservationDate && (
+                                <small className="field-error">{errors.reservationDate}</small>
+                            )}
+                        </label>
+
+                        {isEditing && (
+                            <label className="catalog-field">
+                                <span>Estado</span>
+                                <select value={values.status} onChange={handleChange('status')}>
+                                    {EDITABLE_STATUS_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        )}
+
+                        <label className="catalog-field">
+                            <span>Notas</span>
+                            <textarea
+                                rows="3"
+                                value={values.notes}
+                                onChange={handleChange('notes')}
+                            />
                         </label>
                     </fieldset>
 
                     {submitMessage && (
-                        <div className={`catalog-form-message ${submitMessage.type}`}>{submitMessage.text}</div>
+                        <div className={`catalog-form-message ${submitMessage.type}`}>
+                            {submitMessage.text}
+                        </div>
                     )}
 
                     <div className="catalog-form-actions">
-                        <button type="button" className="seed-button secondary" onClick={() => navigate('/reservations')}>
+                        <button
+                            type="button"
+                            className="seed-button secondary"
+                            onClick={() => navigate('/reservations')}
+                        >
                             Cancelar
                         </button>
-                        <button type="submit" className="seed-button primary" disabled={isSubmitting || isLocked}>
+                        <button
+                            type="submit"
+                            className="seed-button primary"
+                            disabled={isSubmitting || isLocked}
+                        >
                             {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Registrar'}
                         </button>
                     </div>
