@@ -1,8 +1,13 @@
 /* Reutiliza el tablero de siembras (SowingList.css); aquí solo lo propio de reservas. */
 
-.reservation-status-reserved {
+.reservation-status-pending {
     --sowing-c: var(--sowing-teal);
     --sowing-cb: var(--sowing-teal-bg);
+}
+
+.reservation-status-confirmed {
+    --sowing-c: var(--sowing-blue, var(--sowing-teal));
+    --sowing-cb: var(--sowing-blue-bg, var(--sowing-teal-bg));
 }
 
 .reservation-status-delivered {
@@ -97,6 +102,13 @@
 
 .reservation-link.danger {
     color: var(--sowing-red);
+}
+
+.reservation-notes {
+    margin: 0;
+    color: var(--sowing-muted);
+    font-size: 13px;
+    line-height: 1.4;
 }
 
 @media (max-width: 640px) {

@@ -5,8 +5,7 @@ export const MOCK_CONFIG = {
     locations: false,
     sowings: false,
     beds: false,
-    // SUPUESTO: el backend no tiene reservas; en true hasta que exista /reservations.
-    reservations: true,
+    reservations: false,
 
     delayMs: 300,
 };
