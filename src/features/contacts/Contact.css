@@ -1,0 +1,121 @@
+.contact-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.contact-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.contact-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.contact-role {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #eef2ff;
+    color: #3730a3;
+}
+
+.contact-role.client {
+    background: #e0f2fe;
+    color: #075985;
+}
+
+.contact-role.supplier {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.contact-role.employee {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.contact-inactive {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #fdecea;
+    color: #b3261e;
+}
+
+.contact-card.off {
+    opacity: 0.75;
+}
+
+.contact-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.contact-deactivate {
+    border: none;
+    background: none;
+    color: #b3261e;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.contact-deactivate:hover {
+    text-decoration: underline;
+}
+
+.contact-role-fieldset {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+.contact-role-fieldset legend {
+    padding: 0 6px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.contact-role-options {
+    display: grid;
+    gap: 10px;
+}
+
+.contact-role-option {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    cursor: pointer;
+}
+
+.contact-role-option input {
+    margin-top: 3px;
+    accent-color: #2e7d32;
+}
+
+.contact-role-option strong {
+    display: block;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.contact-role-option span {
+    font-size: 12px;
+    color: #6b7280;
+}

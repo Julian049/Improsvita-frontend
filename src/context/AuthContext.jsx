@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from 'react';
+import { useState } from 'react';
+import { AuthContext } from './useAuth';
 import {
     getToken,
     setToken as saveToken,
@@ -8,8 +9,6 @@ import {
 } from '../api/tokenStorage';
 import { loginRequest, registerRequest } from '../api/authApi';
 import { getApiErrorMessage } from '../api/apiError';
-
-const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(() => {
@@ -73,12 +72,4 @@ export function AuthProvider({ children }) {
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth debe usarse dentro de un AuthProvider');
-    }
-    return context;
 }

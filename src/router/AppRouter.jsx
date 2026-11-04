@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
-import ProtectedRoute from '../components/routing/ProtectedRoute';
 import LoginPage from '../features/auth/LoginPage';
 import RegisterPage from '../features/auth/RegisterPage';
 import SeedFormPage from '../features/seeds/seedsForm/SeedFormPage.jsx';
@@ -11,8 +10,8 @@ import SeedlingListPage from '../features/seedlings/SeedlingListPage.jsx';
 import SeedlingReviewPage from '../features/seedlings/SeedlingReviewPage.jsx';
 import DashboardPage from '../features/dashboard/DashboardPage.jsx';
 import LotTracePage from '../features/lots/lotTrace/LotTracePage.jsx';
-import SupplierListPage from '../features/suppliers/SupplierListPage';
-import SupplierFormPage from '../features/suppliers/SupplierFormPage';
+import ContactListPage from '../features/contacts/ContactListPage';
+import ContactFormPage from '../features/contacts/ContactFormPage';
 import SowingFormPage from '../features/sowings/sowingsForm/SowingFormPage.jsx';
 import SowingListPage from '../features/sowings/sowingsList/SowingListPage.jsx';
 import LocationListPage from '../features/locations/LocationListPage.jsx';
@@ -45,9 +44,12 @@ function AppRouter() {
                         <Route path="lots/new" element={<LotFormPage />} />
                         <Route path="lots/:id/edit" element={<LotFormPage />} />
                         <Route path="lots/trace" element={<LotTracePage />} />
-                        <Route path="suppliers" element={<SupplierListPage />} />
-                        <Route path="suppliers/new" element={<SupplierFormPage />} />
-                        <Route path="suppliers/:id/edit" element={<SupplierFormPage />} />
+                        <Route path="contacts" element={<ContactListPage />} />
+                        <Route path="contacts/new" element={<ContactFormPage />} />
+                        <Route path="contacts/:id/edit" element={<ContactFormPage />} />
+                        <Route path="suppliers" element={<Navigate to="/contacts" replace />} />
+                        <Route path="suppliers/new" element={<Navigate to="/contacts/new" replace />} />
+                        <Route path="suppliers/:id/edit" element={<ContactFormPage />} />
                         <Route path="sowings" element={<SowingListPage />} />
                         <Route path="sowings/new" element={<SowingFormPage />} />
                         <Route path="locations" element={<LocationListPage />} />

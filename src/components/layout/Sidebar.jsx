@@ -13,7 +13,7 @@ const SECONDARY_LINKS = [
     // SUPUESTO: módulo sin backend todavía (usa datos de prueba).
     { to: '/reservations', label: 'Reservas' },
     // { to: '/sales', label: 'Ventas' },
-    { to: '/suppliers', label: 'Contactos' },
+    { to: '/contacts', label: 'Contactos' },
     { to: '/seed-types', label: 'Tipos de semilla' },
     { to: '/locations', label: 'Ubicaciones' },
     { to: '/beds', label: 'Camas' },
