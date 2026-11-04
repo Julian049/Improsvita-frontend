@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
-import { createSupplier, getSupplierById, getSuppliers, updateSupplier } from './supplierApi';
+import { createSupplier, getSupplierById, updateSupplier } from './supplierApi';
+import { getContacts } from '../contacts/contactApi';
 import { getApiErrorMessage } from '../../api/apiError';
 import {
     FIELD_LABELS,
@@ -76,15 +77,15 @@ function SupplierFormPage() {
 
         setIsSubmitting(true);
         try {
-            // Un correo repetido viola la restricción única y el backend responde 500 sin mensaje.
-            const existing = await getSuppliers();
+            // El email es único entre todos los contactos, no solo entre proveedores.
+            const existing = await getContacts(null, true);
             const emailTaken = existing.some(
-                (supplier) =>
-                    String(supplier.supplierId) !== String(id) &&
-                    supplier.email?.toLowerCase() === payload.email.toLowerCase()
+                (contact) =>
+                    String(contact.id) !== String(id) &&
+                    contact.email?.toLowerCase() === payload.email.toLowerCase()
             );
             if (emailTaken) {
-                setErrors({ email: 'Ya existe un proveedor con este correo.' });
+                setErrors({ email: 'Ya existe un contacto con este correo.' });
                 setSubmitMessage({ type: 'error', text: 'Revisa los campos marcados: Correo electrónico.' });
                 return;
             }

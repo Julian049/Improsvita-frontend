@@ -1,21 +1,29 @@
 import axiosClient from '../../api/axiosClient';
+import {
+    CONTACT_ROLE,
+    createContact,
+    getContactById,
+    getContacts,
+    updateContact,
+} from '../contacts/contactApi';
 import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
 import { MOCK_SUPPLIERS } from '../../mocks/supplierMocks';
 
-function fromSupplierResponse(supplier) {
+function fromContactResponse(contact) {
     return {
-        supplierId: supplier.id,
-        name: supplier.name,
-        phone: supplier.phone,
-        email: supplier.email,
+        supplierId: contact.id,
+        name: contact.name,
+        phone: contact.phone,
+        email: contact.email,
     };
 }
 
-function toSupplierRequest(payload) {
+function toContactRequest(payload, roles) {
     return {
         name: payload.name,
         phone: payload.phone,
         email: payload.email,
+        roles,
     };
 }
 
@@ -25,8 +33,8 @@ export async function getSuppliers() {
         return MOCK_SUPPLIERS;
     }
 
-    const { data } = await axiosClient.get('/suppliers');
-    return data.map(fromSupplierResponse);
+    const contacts = await getContacts(CONTACT_ROLE.SUPPLIER, true);
+    return contacts.map(fromContactResponse);
 }
 
 export async function getSupplierById(id) {
@@ -37,18 +45,16 @@ export async function getSupplierById(id) {
         return supplier;
     }
 
-    const { data } = await axiosClient.get(`/suppliers/${id}`);
-    return fromSupplierResponse(data);
+    const contact = await getContactById(id);
+    if (!contact.roles.includes(CONTACT_ROLE.SUPPLIER)) {
+        throw new Error('Proveedor no encontrado');
+    }
+    return fromContactResponse(contact);
 }
 
 export async function getSupplierByName(name) {
-    try {
-        const { data } = await axiosClient.get(`/suppliers/name/${encodeURIComponent(name)}`);
-        return fromSupplierResponse(data);
-    } catch (error) {
-        if (error.response?.status === 404) return null;
-        throw error;
-    }
+    const suppliers = await getSuppliers();
+    return suppliers.find((supplier) => supplier.name === name) ?? null;
 }
 
 export async function getSeedCountsBySupplier(supplierIds) {
@@ -66,11 +72,18 @@ export async function getSeedCountsBySupplier(supplierIds) {
 }
 
 export async function createSupplier(payload) {
-    const { data } = await axiosClient.post('/suppliers', toSupplierRequest(payload));
-    return fromSupplierResponse(data);
+    const created = await createContact(
+        toContactRequest(payload, [CONTACT_ROLE.SUPPLIER])
+    );
+    return fromContactResponse(created);
 }
 
 export async function updateSupplier(id, payload) {
-    const { data } = await axiosClient.put(`/suppliers/${id}`, toSupplierRequest(payload));
-    return fromSupplierResponse(data);
+    const current = await getContactById(id);
+    const roles = current.roles.includes(CONTACT_ROLE.SUPPLIER)
+        ? current.roles
+        : [...current.roles, CONTACT_ROLE.SUPPLIER];
+
+    const updated = await updateContact(id, toContactRequest(payload, roles));
+    return fromContactResponse(updated);
 }

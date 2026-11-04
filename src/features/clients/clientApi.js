@@ -1,21 +1,20 @@
-import axiosClient from '../../api/axiosClient';
+import { CONTACT_ROLE, getContactById, getContacts } from '../contacts/contactApi';
 
-function fromClientResponse(client) {
+function fromClientResponse(contact) {
     return {
-        clientId: client.id,
-        name: client.name,
-        phone: client.phone,
-        email: client.email,
-        active: client.active,
+        clientId: contact.id,
+        name: contact.name,
+        phone: contact.phone,
+        email: contact.email,
+        active: contact.active,
     };
 }
 
 export async function getClients() {
-    const { data } = await axiosClient.get('/clients');
-    return data.map(fromClientResponse);
+    const contacts = await getContacts(CONTACT_ROLE.CLIENT);
+    return contacts.map(fromClientResponse);
 }
 
 export async function getClientById(id) {
-    const { data } = await axiosClient.get(`/clients/${id}`);
-    return fromClientResponse(data);
+    return fromClientResponse(await getContactById(id));
 }

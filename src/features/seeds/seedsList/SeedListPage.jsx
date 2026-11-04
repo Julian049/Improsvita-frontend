@@ -75,8 +75,6 @@ export const SeedListPage = () => {
 
     useEffect(() => {
         let cancelled = false;
-        setIsFetchingSeeds(true);
-        setSeedsError(null);
 
         getSeeds(appliedFilter)
             .then((data) => {
@@ -131,6 +129,8 @@ export const SeedListPage = () => {
     const hasAppliedFilter = appliedFilter.mode !== '';
 
     function applyFilter(next) {
+        setIsFetchingSeeds(true);
+        setSeedsError(null);
         setAppliedFilter(next);
         setPage(1);
         setFilterError('');

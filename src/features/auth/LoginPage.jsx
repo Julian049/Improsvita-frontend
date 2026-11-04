@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, Navigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import './LoginPage.css';
 
 function LoginPage() {
