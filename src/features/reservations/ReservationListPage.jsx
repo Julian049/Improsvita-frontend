@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { cancelReservation, getReservations } from './reservationApi';
+import { cancelReservation, changeReservationStatus, getReservations } from './reservationApi';
 import {
     RESERVATION_STATUS,
     RESERVATION_STATUS_OPTIONS,
@@ -17,7 +17,7 @@ import { formatQty } from '../../utils/numberUtils';
 import '../sowings/sowingsList/SowingList.css';
 import './ReservationList.css';
 
-function ReservationCard({ reservation, onCancel }) {
+function ReservationCard({ reservation, onCancel, onDeliver }) {
     const canEdit =
         reservation.status !== RESERVATION_STATUS.DELIVERED &&
         reservation.status !== RESERVATION_STATUS.CANCELLED;
@@ -49,6 +49,15 @@ function ReservationCard({ reservation, onCancel }) {
                     >
                         Editar
                     </Link>
+                    {reservation.status === RESERVATION_STATUS.CONFIRMED && (
+                        <button
+                            type="button"
+                            className="reservation-link"
+                            onClick={() => onDeliver(reservation)}
+                        >
+                            Entregar
+                        </button>
+                    )}
                     {isLiveReservation(reservation) && (
                         <button
                             type="button"
@@ -76,6 +85,8 @@ function ReservationListPage() {
 
     const [toCancel, setToCancel] = useState(null);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [toDeliver, setToDeliver] = useState(null);
+    const [isDelivering, setIsDelivering] = useState(false);
     const [actionError, setActionError] = useState(null);
 
     useEffect(() => {
@@ -121,18 +132,38 @@ function ReservationListPage() {
         (option) => !statusFilter || option.value === statusFilter
     );
 
+    function applyUpdated(updated) {
+        setReservations((prev) =>
+            prev.map((reservation) =>
+                String(reservation.reservationId) === String(updated.reservationId)
+                    ? { ...reservation, ...updated }
+                    : reservation
+            )
+        );
+    }
+
+    async function handleConfirmDeliver() {
+        setIsDelivering(true);
+        setActionError(null);
+        try {
+            applyUpdated(
+                await changeReservationStatus(toDeliver.reservationId, RESERVATION_STATUS.DELIVERED)
+            );
+        } catch (err) {
+            setActionError(
+                getApiErrorMessage(err, 'No se pudo confirmar la entrega. Intenta nuevamente.')
+            );
+        } finally {
+            setIsDelivering(false);
+            setToDeliver(null);
+        }
+    }
+
     async function handleConfirmCancel() {
         setIsCancelling(true);
         setActionError(null);
         try {
-            const updated = await cancelReservation(toCancel.reservationId);
-            setReservations((prev) =>
-                prev.map((reservation) =>
-                    String(reservation.reservationId) === String(updated.reservationId)
-                        ? { ...reservation, ...updated }
-                        : reservation
-                )
-            );
+            applyUpdated(await cancelReservation(toCancel.reservationId));
         } catch (err) {
             setActionError(
                 getApiErrorMessage(err, 'No se pudo cancelar la reserva. Intenta nuevamente.')
@@ -178,6 +209,7 @@ function ReservationListPage() {
                                         key={reservation.reservationId}
                                         reservation={reservation}
                                         onCancel={setToCancel}
+                                        onDeliver={setToDeliver}
                                     />
                                 ))
                             )}
@@ -226,6 +258,21 @@ function ReservationListPage() {
             {actionError && <div className="sowing-list-message error">{actionError}</div>}
 
             {renderContent()}
+
+            {toDeliver && (
+                <ConfirmDialog
+                    title="Confirmar entrega"
+                    message="¿Confirmar la entrega de esta reserva? Pasará a estado Entregada y ya no se podrá modificar."
+                    details={`${toDeliver.clientName} · ${toDeliver.plantName} · $ ${formatQty(
+                        toDeliver.totalPrice
+                    )}`}
+                    confirmLabel="Confirmar entrega"
+                    cancelLabel="Volver"
+                    isConfirming={isDelivering}
+                    onConfirm={handleConfirmDeliver}
+                    onCancel={() => setToDeliver(null)}
+                />
+            )}
 
             {toCancel && (
                 <ConfirmDialog
