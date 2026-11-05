@@ -34,3 +34,14 @@ export async function createSale(payload) {
         throw err;
     }
 }
+
+// SUPUESTO: aún no existe GET /sales.
+export async function getSales() {
+    if (MOCK_CONFIG.sales) {
+        await mockDelay();
+        return [...MOCK_SALES];
+    }
+
+    const { data } = await axiosClient.get('/sales');
+    return data;
+}
