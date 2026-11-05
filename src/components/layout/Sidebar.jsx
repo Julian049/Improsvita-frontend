@@ -9,11 +9,14 @@ const MAIN_LINKS = [
     { to: '/sowings', label: 'Siembras' },
 ];
 
+const SALES_LINKS = [
+    // SUPUESTO: módulo sin backend todavía (usa datos de prueba).
+    { to: '/sales', label: 'Venta directa' },
+    { to: '/history', label: 'Historial' },
+];
+
 const SECONDARY_LINKS = [
     { to: '/reservations', label: 'Reservas' },
-    // SUPUESTO: módulo sin backend todavía (usa datos de prueba).
-    { to: '/sales', label: 'Ventas' },
-    { to: '/history', label: 'Historial' },
     { to: '/contacts', label: 'Contactos' },
     { to: '/seed-types', label: 'Tipos de semilla' },
     { to: '/locations', label: 'Ubicaciones' },
@@ -40,6 +43,13 @@ function Sidebar({ onNavigate }) {
 
             <nav className="app-sidebar-nav" aria-label="Navegación principal">
                 {MAIN_LINKS.map((link) => (
+                    <SidebarLink key={link.to} {...link} onNavigate={onNavigate} />
+                ))}
+
+                <div className="app-sidebar-sep" role="separator" />
+
+                <div className="app-sidebar-group" id="app-sidebar-sales">Gestión de ventas</div>
+                {SALES_LINKS.map((link) => (
                     <SidebarLink key={link.to} {...link} onNavigate={onNavigate} />
                 ))}
 

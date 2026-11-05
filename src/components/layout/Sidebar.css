@@ -61,6 +61,15 @@
     margin: 10px 8px;
 }
 
+.app-sidebar-group {
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+}
+
 /* Móvil/tablet: el menú se oculta a la izquierda y se abre con el botón del encabezado. */
 @media (max-width: 900px) {
     .app-sidebar {
