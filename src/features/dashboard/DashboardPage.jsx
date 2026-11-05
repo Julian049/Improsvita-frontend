@@ -6,6 +6,7 @@ import { getAllSowings } from '../sowings/sowingApi.js';
 import { getBeds } from '../beds/bedApi.js';
 import { formatQty } from '../../utils/numberUtils.js';
 import { getDashboardData } from './dashboardUtils.js';
+import BiDashboard from './BiDashboard.jsx';
 import './Dashboard.css';
 
 function Stat({ label, value, hint }) {
@@ -167,6 +168,8 @@ function DashboardPage() {
                     </section>
                 </>
             )}
+
+            <BiDashboard />
         </div>
     );
 }
