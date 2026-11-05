@@ -10,7 +10,6 @@ const MAIN_LINKS = [
 ];
 
 const SECONDARY_LINKS = [
-    // SUPUESTO: módulo sin backend todavía (usa datos de prueba).
     { to: '/reservations', label: 'Reservas' },
     // { to: '/sales', label: 'Ventas' },
     { to: '/contacts', label: 'Contactos' },
