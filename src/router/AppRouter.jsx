@@ -22,6 +22,7 @@ import SeedTypeListPage from '../features/seedTypes/SeedTypeListPage.jsx';
 import SeedTypeFormPage from '../features/seedTypes/SeedTypeFormPage.jsx';
 import ReservationFormPage from '../features/reservations/ReservationFormPage.jsx';
 import ReservationListPage from '../features/reservations/ReservationListPage.jsx';
+import SaleFormPage from '../features/sales/SaleFormPage.jsx';
 
 function AppRouter() {
     return (
@@ -63,7 +64,7 @@ function AppRouter() {
                         <Route path="reservations" element={<ReservationListPage />} />
                         <Route path="reservations/new" element={<ReservationFormPage />} />
                         <Route path="reservations/:id/edit" element={<ReservationFormPage />} />
-                        <Route path="sales" element={<h1>Ventas</h1>} />
+                        <Route path="sales" element={<SaleFormPage />} />
 
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Route>
