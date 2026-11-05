@@ -7,6 +7,7 @@ export const MOCK_CONFIG = {
     beds: false,
     reservations: false,
     sales: true,
+    prediction: true,
 
     delayMs: 300,
 };

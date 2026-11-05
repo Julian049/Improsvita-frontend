@@ -23,6 +23,7 @@ import SeedTypeFormPage from '../features/seedTypes/SeedTypeFormPage.jsx';
 import ReservationFormPage from '../features/reservations/ReservationFormPage.jsx';
 import ReservationListPage from '../features/reservations/ReservationListPage.jsx';
 import HistoryPage from '../features/history/HistoryPage.jsx';
+import PredictionPage from '../features/prediction/PredictionPage.jsx';
 import SaleFormPage from '../features/sales/SaleFormPage.jsx';
 
 function AppRouter() {
@@ -67,6 +68,7 @@ function AppRouter() {
                         <Route path="reservations/:id/edit" element={<ReservationFormPage />} />
                         <Route path="sales" element={<SaleFormPage />} />
                         <Route path="history" element={<HistoryPage />} />
+                        <Route path="prediction" element={<PredictionPage />} />
 
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Route>
