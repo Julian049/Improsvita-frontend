@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import ModalLink from '../../components/ui/ModalLink.jsx';
 import { deleteSeedType, getSeedTypes } from './seedTypeApi';
 import { getSeedTypeLabel } from './seedTypeUtils';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
@@ -89,10 +90,15 @@ function SeedTypeListPage() {
     return (
         <div className="catalog-page">
             <div className="catalog-head">
-                <h1>Tipos de semilla</h1>
-                <Link to="/seed-types/new" className="seed-button primary">
+                <div>
+                    <h1>Tipos de semilla</h1>
+                    <p className="page-subtitle">
+                        Clasificación de semillas por tipo y comportamiento.
+                    </p>
+                </div>
+                <ModalLink to="/seed-types/new" className="seed-button primary">
                     + Registrar tipo
-                </Link>
+                </ModalLink>
             </div>
 
             {message && (

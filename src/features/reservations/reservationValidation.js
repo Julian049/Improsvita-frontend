@@ -29,7 +29,8 @@ export const EDITABLE_STATUS_OPTIONS = RESERVATION_STATUS_OPTIONS.filter(
 export function isLiveReservation(reservation) {
     return (
         reservation.active !== false &&
-        reservation.status !== RESERVATION_STATUS.CANCELLED
+        reservation.status !== RESERVATION_STATUS.CANCELLED &&
+        reservation.status !== RESERVATION_STATUS.DELIVERED
     );
 }
 

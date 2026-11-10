@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ModalLink from '../../components/ui/ModalLink.jsx';
 import { getBeds } from './bedApi';
 import { formatQty } from '../../utils/numberUtils';
 import '../../components/ui/Catalog.css';
@@ -60,10 +61,15 @@ function BedListPage() {
     return (
         <div className="catalog-page">
             <div className="catalog-head">
-                <h1>Camas</h1>
-                <Link to="/beds/new" className="seed-button primary">
+                <div>
+                    <h1>Camas</h1>
+                    <p className="page-subtitle">
+                        Capacidad y ocupación de las camas del vivero.
+                    </p>
+                </div>
+                <ModalLink to="/beds/new" className="seed-button primary">
                     + Registrar cama
-                </Link>
+                </ModalLink>
             </div>
             {renderContent()}
         </div>

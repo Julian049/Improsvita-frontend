@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { cancelReservation, changeReservationStatus, getReservations } from './reservationApi';
+import ModalLink from '../../components/ui/ModalLink.jsx';
+import { cancelReservation, getReservations } from './reservationApi';
+import { deliverReservation, getSaleAvailability } from '../sales/saleApi';
+import { getTodayDateString } from '../sowings/sowingUtils';
 import {
     RESERVATION_STATUS,
     RESERVATION_STATUS_OPTIONS,
@@ -18,9 +21,7 @@ import '../sowings/sowingsList/SowingList.css';
 import './ReservationList.css';
 
 function ReservationCard({ reservation, onCancel, onDeliver }) {
-    const canEdit =
-        reservation.status !== RESERVATION_STATUS.DELIVERED &&
-        reservation.status !== RESERVATION_STATUS.CANCELLED;
+    const canEdit = reservation.status !== RESERVATION_STATUS.CANCELLED;
 
     return (
         <article className="sowing-card reservation-card">
@@ -146,9 +147,21 @@ function ReservationListPage() {
         setIsDelivering(true);
         setActionError(null);
         try {
-            applyUpdated(
-                await changeReservationStatus(toDeliver.reservationId, RESERVATION_STATUS.DELIVERED)
-            );
+            const availability = await getSaleAvailability(toDeliver.sowingId);
+            const quantity = Number(availability?.available) || 0;
+            if (quantity <= 0) {
+                throw { userMessage: 'No hay plántulas disponibles para entregar esta reserva.' };
+            }
+
+            const unitPrice = Number((Number(toDeliver.totalPrice) / quantity).toFixed(2));
+            await deliverReservation({
+                reservationId: toDeliver.reservationId,
+                quantity,
+                unitPrice,
+                saleDate: getTodayDateString(),
+                notes: toDeliver.notes,
+            });
+            applyUpdated({ ...toDeliver, status: RESERVATION_STATUS.DELIVERED });
         } catch (err) {
             setActionError(
                 getApiErrorMessage(err, 'No se pudo confirmar la entrega. Intenta nuevamente.')
@@ -225,10 +238,13 @@ function ReservationListPage() {
             <div className="sowing-head">
                 <div>
                     <h1>Reservas</h1>
+                    <p className="page-subtitle">
+                        Reservas activas, entregas pendientes y disponibilidad comprometida.
+                    </p>
                 </div>
-                <Link to="/reservations/new" className="seed-button primary">
+                <ModalLink to="/reservations/new" className="seed-button primary">
                     + Registrar reserva
-                </Link>
+                </ModalLink>
             </div>
 
             <div className="reservation-bar">
@@ -262,7 +278,7 @@ function ReservationListPage() {
             {toDeliver && (
                 <ConfirmDialog
                     title="Confirmar entrega"
-                    message="¿Confirmar la entrega de esta reserva? Pasará a estado Entregada y ya no se podrá modificar."
+                    message="¿Confirmar la entrega? Se registrará la venta en el historial y la reserva quedará entregada."
                     details={`${toDeliver.clientName} · ${toDeliver.plantName} · $ ${formatQty(
                         toDeliver.totalPrice
                     )}`}

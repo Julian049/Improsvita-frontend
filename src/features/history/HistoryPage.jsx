@@ -47,27 +47,37 @@ function HistoryPage() {
             clientName: clientNameById.get(String(clientId)) ?? `Cliente #${clientId}`,
             plantName: plantNameById.get(String(sowingId)) ?? `Siembra #${sowingId}`,
         });
+        const activeSales = sales.filter((sale) => sale.active !== false);
+        const billedReservations = new Set(
+            activeSales
+                .filter((sale) => sale.reservationId != null)
+                .map((sale) => String(sale.reservationId))
+        );
         return [
-            ...sales.map((sale) => ({
+            ...activeSales.map((sale) => ({
                 key: `sale-${sale.id}`,
                 reference: `V-${sale.id}`,
-                typeLabel: 'Venta directa',
+                typeLabel: sale.saleType === 'RESERVATION' ? 'Entrega de reserva' : 'Venta directa',
                 date: sale.saleDate,
                 quantity: sale.quantity,
-                totalPrice: sale.totalPrice,
+                unitPrice: sale.unitPrice,
+                totalPrice: sale.total,
                 notes: sale.notes,
-                ...named(sale.clientId, sale.sowingId),
+                ...named(sale.contactId, sale.sowingId),
             })),
-            ...deliveries.map((reservation) => ({
-                key: `reservation-${reservation.reservationId}`,
-                reference: `R-${reservation.reservationId}`,
-                typeLabel: 'Entrega de reserva',
-                date: reservation.reservationDate,
-                quantity: null,
-                totalPrice: reservation.totalPrice,
-                notes: reservation.notes,
-                ...named(reservation.clientId, reservation.sowingId),
-            })),
+            ...deliveries
+                .filter((reservation) => !billedReservations.has(String(reservation.reservationId)))
+                .map((reservation) => ({
+                    key: `reservation-${reservation.reservationId}`,
+                    reference: `R-${reservation.reservationId}`,
+                    typeLabel: 'Entrega de reserva',
+                    date: reservation.reservationDate,
+                    quantity: null,
+                    unitPrice: null,
+                    totalPrice: reservation.totalPrice,
+                    notes: reservation.notes,
+                    ...named(reservation.clientId, reservation.sowingId),
+                })),
         ].sort((a, b) => String(b.date).localeCompare(String(a.date)));
     }, [sales, deliveries, clientNameById, plantNameById]);
 
@@ -95,8 +105,8 @@ function HistoryPage() {
                             <th>Tipo</th>
                             <th>Cliente</th>
                             <th>Siembra</th>
-                            <th>Cantidad</th>
-                            <th>Total</th>
+                            <th className="catalog-number">Cantidad</th>
+                            <th className="catalog-number">Total</th>
                             <th />
                         </tr>
                     </thead>
@@ -104,15 +114,25 @@ function HistoryPage() {
                         {entries.map((entry) => (
                             <tr key={entry.key}>
                                 <td>{formatDate(entry.date)}</td>
-                                <td>{entry.typeLabel}</td>
+                                <td>
+                                    <span
+                                        className={`catalog-badge ${
+                                            entry.typeLabel === 'Venta directa' ? 'sale' : 'reservation'
+                                        }`}
+                                    >
+                                        {entry.typeLabel}
+                                    </span>
+                                </td>
                                 <td>{entry.clientName}</td>
                                 <td>{entry.plantName}</td>
-                                <td>{entry.quantity != null ? formatQty(entry.quantity) : '—'}</td>
-                                <td>$ {formatQty(entry.totalPrice)}</td>
+                                <td className="catalog-number">
+                                    {entry.quantity != null ? formatQty(entry.quantity) : '—'}
+                                </td>
+                                <td className="catalog-number">$ {formatQty(entry.totalPrice)}</td>
                                 <td className="catalog-actions">
                                     <button
                                         type="button"
-                                        className="catalog-link"
+                                        className="catalog-action-button"
                                         onClick={() => handleReceipt(entry)}
                                     >
                                         Comprobante
@@ -129,7 +149,12 @@ function HistoryPage() {
     return (
         <div className="catalog-page">
             <div className="catalog-head">
-                <h1>Historial</h1>
+                <div>
+                    <h1>Historial</h1>
+                    <p className="page-subtitle">
+                        Consulta ventas directas y entregas de reserva con su comprobante.
+                    </p>
+                </div>
             </div>
             {notice && <div className="catalog-message error">{notice}</div>}
             {renderContent()}

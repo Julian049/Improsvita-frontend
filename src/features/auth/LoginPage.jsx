@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
+import AuthShell from './AuthShell';
 import './LoginPage.css';
 
 function LoginPage() {
@@ -36,11 +37,10 @@ function LoginPage() {
     }
 
     return (
-        <div className="login-page">
-            <div className="login-card">
-                <div className="logo">Improsvita</div>
-                <p className="login-subtitle">Ingresa a tu cuenta para continuar</p>
-
+        <AuthShell
+            title="Iniciar sesión"
+            subtitle="Ingresa con tu cuenta para continuar."
+        >
                 <form onSubmit={handleSubmit} className="login-form">
                     <label className="login-field">
                         <span>Correo electrónico</span>
@@ -68,15 +68,14 @@ function LoginPage() {
                     {submitError && <div className="login-error">{submitError}</div>}
 
                     <button type="submit" className="login-button" disabled={isSubmitting}>
-                        {isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
+                        {isSubmitting ? 'Ingresando...' : 'Entrar'}
                     </button>
                 </form>
 
                 <p className="login-switch">
-                    ¿No tienes cuenta? <Link to="/register">Regístrate</Link>
+                    ¿No tienes cuenta? <Link to="/register">Crear cuenta</Link>
                 </p>
-            </div>
-        </div>
+        </AuthShell>
     );
 }
 

@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { createSowingReview, getSeedlings, getSowingReviews } from './seedlingApi';
 import {
     REVIEW_FIELD_LABELS,
-    REVIEW_NOTES_MAX,
     getReviewFormInitialValues,
     validateReviewForm,
 } from './seedlingValidation';
@@ -139,16 +138,6 @@ function SeedlingReviewPage() {
                             {errors.reviewDate && <small className="field-error">{errors.reviewDate}</small>}
                         </label>
 
-                        <label className="catalog-field">
-                            <span>Observaciones (opcional)</span>
-                            <textarea maxLength={REVIEW_NOTES_MAX} value={values.notes} onChange={handleChange('notes')} />
-                            {errors.notes ? (
-                                <small className="field-error">{errors.notes}</small>
-                            ) : (
-                                <small>{`${values.notes.length}/${REVIEW_NOTES_MAX}`}</small>
-                            )}
-                        </label>
-
                         {submitMessage && (
                             <div className={`catalog-form-message ${submitMessage.type}`}>{submitMessage.text}</div>
                         )}
@@ -171,20 +160,18 @@ function SeedlingReviewPage() {
                     <tr>
                         <th>Fecha</th>
                         <th>Germinadas</th>
-                        <th>Observaciones</th>
                     </tr>
                     </thead>
                     <tbody>
                     {sortedReviews.length === 0 ? (
                         <tr>
-                            <td colSpan={3}>Sin revisiones todavía.</td>
+                            <td colSpan={2}>Sin revisiones todavía.</td>
                         </tr>
                     ) : (
                         sortedReviews.map((review) => (
                             <tr key={review.reviewId}>
                                 <td>{formatDate(review.reviewDate)}</td>
                                 <td>{formatQty(review.germinatedQuantity)}</td>
-                                <td>{review.notes || '—'}</td>
                             </tr>
                         ))
                     )}

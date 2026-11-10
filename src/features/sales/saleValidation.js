@@ -4,7 +4,7 @@ export const SALE_FIELD_LABELS = {
     clientId: 'Cliente',
     sowingId: 'Siembra',
     quantity: 'Cantidad',
-    totalPrice: 'Precio total',
+    unitPrice: 'Precio unitario',
     saleDate: 'Fecha de venta',
 };
 
@@ -27,10 +27,13 @@ export function validateSaleForm(values, available) {
         }
     }
 
-    if (!errors.totalPrice) {
-        const totalPrice = Number(values.totalPrice);
-        if (!Number.isFinite(totalPrice) || totalPrice < 0) {
-            errors.totalPrice = 'El precio total debe ser un número mayor o igual a 0.';
+    if (!errors.unitPrice) {
+        const raw = String(values.unitPrice).trim();
+        const unitPrice = Number(raw);
+        if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+            errors.unitPrice = 'El precio unitario debe ser un número mayor o igual a 0.';
+        } else if (!/^\d+(\.\d{1,2})?$/.test(raw)) {
+            errors.unitPrice = 'El precio unitario admite como máximo dos decimales.';
         }
     }
 
@@ -42,7 +45,7 @@ export function getSaleFormInitialValues() {
         clientId: '',
         sowingId: '',
         quantity: '',
-        totalPrice: '',
+        unitPrice: '',
         saleDate: getTodayDateString(),
         notes: '',
     };

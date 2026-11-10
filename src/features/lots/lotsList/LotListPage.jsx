@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import ModalLink from '../../../components/ui/ModalLink.jsx';
 import { getLots } from '../lotApi.js';
 import { getAllSeeds } from '../../seeds/seedApi.js';
 import { getLocations } from '../../locations/locationApi.js';
@@ -226,9 +227,9 @@ function LotListPage() {
         return (
             <div className="lot-list-empty">
                 <p>No existen lotes registrados en el inventario.</p>
-                <Link to="/lots/new" className="seed-button primary">
+                <ModalLink to="/lots/new" className="seed-button primary">
                     Registrar nuevo lote
-                </Link>
+                </ModalLink>
             </div>
         );
     }
@@ -257,10 +258,15 @@ function LotListPage() {
     return (
         <div className="lot-list-page" ref={topRef}>
             <div className="lot-head">
-                <h1>Lotes</h1>
-                <Link to="/lots/new" className="seed-button primary">
+                <div>
+                    <h1>Lotes</h1>
+                    <p className="page-subtitle">
+                        Consulta el stock disponible y el estado de cada lote.
+                    </p>
+                </div>
+                <ModalLink to="/lots/new" className="seed-button primary">
                     + Registrar lote
-                </Link>
+                </ModalLink>
             </div>
 
             <div className="lot-list-toolbar">

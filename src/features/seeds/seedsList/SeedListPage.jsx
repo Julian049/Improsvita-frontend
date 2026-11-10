@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Link, useNavigate, useSearchParams} from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import ModalLink from '../../../components/ui/ModalLink.jsx';
 import {deleteSeed, getSeeds} from '../seedApi.js';
 import {getSuppliers} from '../../suppliers/supplierApi';
 import {getAllLots} from '../../lots/lotApi.js';
@@ -277,9 +278,9 @@ export const SeedListPage = () => {
         return (
             <div className="seed-list-empty">
                 <p>No existen semillas registradas en el catálogo.</p>
-                <Link to="/seeds/new" className="seed-btn">
+                <ModalLink to="/seeds/new" className="seed-btn">
                     Registrar nueva semilla
-                </Link>
+                </ModalLink>
             </div>
         );
     }
@@ -289,10 +290,13 @@ export const SeedListPage = () => {
             <div className="seed-head">
                 <div>
                     <h1>Semillas</h1>
+                    <p className="page-subtitle">
+                        Tipos de semilla, proveedores y disponibilidad del inventario.
+                    </p>
                 </div>
-                <Link to="/seeds/new" className="seed-btn">
+                <ModalLink to="/seeds/new" className="seed-btn">
                     + Registrar semilla
-                </Link>
+                </ModalLink>
             </div>
 
             <form className="seed-list-toolbar" onSubmit={handleSubmit}>

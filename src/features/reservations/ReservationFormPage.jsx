@@ -73,9 +73,7 @@ function ReservationFormPage() {
     }, [id, isEditing]);
 
     const status = values.status;
-    const isLocked =
-        isEditing &&
-        (status === RESERVATION_STATUS.DELIVERED || status === RESERVATION_STATUS.CANCELLED);
+    const isLocked = isEditing && status === RESERVATION_STATUS.CANCELLED;
 
     const sowingOptions = useMemo(
         () =>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ModalLink from '../../components/ui/ModalLink.jsx';
 import { getLocations } from './locationApi';
 import '../../components/ui/Catalog.css';
 
@@ -57,10 +58,15 @@ function LocationListPage() {
     return (
         <div className="catalog-page">
             <div className="catalog-head">
-                <h1>Ubicaciones</h1>
-                <Link to="/locations/new" className="seed-button primary">
+                <div>
+                    <h1>Ubicaciones</h1>
+                    <p className="page-subtitle">
+                        Bodegas y espacios donde se almacena el inventario.
+                    </p>
+                </div>
+                <ModalLink to="/locations/new" className="seed-button primary">
                     + Registrar ubicación
-                </Link>
+                </ModalLink>
             </div>
             {renderContent()}
         </div>

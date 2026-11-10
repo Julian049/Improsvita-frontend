@@ -75,7 +75,12 @@ function SeedlingListPage() {
     return (
         <div className="catalog-page">
             <div className="catalog-head">
-                <h1>Plántulas</h1>
+                <div>
+                    <h1>Plántulas</h1>
+                    <p className="page-subtitle">
+                        Disponibilidad de plántulas por siembra y lote.
+                    </p>
+                </div>
             </div>
             {renderContent()}
         </div>

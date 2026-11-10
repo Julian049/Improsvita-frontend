@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import ModalLink from '../../../components/ui/ModalLink.jsx';
 import {
     getAllSowings,
     getSowings,
@@ -182,9 +182,9 @@ function SowingListPage() {
         return (
             <div className="sowing-list-empty">
                 <p>No existen siembras registradas.</p>
-                <Link to="/sowings/new" className="seed-button primary">
+                <ModalLink to="/sowings/new" className="seed-button primary">
                     Registrar siembra
-                </Link>
+                </ModalLink>
             </div>
         );
     }
@@ -196,10 +196,13 @@ function SowingListPage() {
             <div className="sowing-head">
                 <div>
                     <h1>Siembras</h1>
+                    <p className="page-subtitle">
+                        Seguimiento del avance, camas y rendimiento de cada siembra.
+                    </p>
                 </div>
-                <Link to="/sowings/new" className="seed-button primary">
+                <ModalLink to="/sowings/new" className="seed-button primary">
                     + Registrar siembra
-                </Link>
+                </ModalLink>
             </div>
 
             <SowingBedStrip

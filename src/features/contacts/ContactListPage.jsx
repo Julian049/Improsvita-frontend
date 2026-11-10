@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ModalLink from '../../components/ui/ModalLink.jsx';
 import { deactivateContact, getContacts } from './contactApi';
 import { CONTACT_ROLE_OPTIONS, getRoleLabel } from './contactRoles';
 import { getApiErrorMessage } from '../../api/apiError';
@@ -197,10 +198,15 @@ function ContactListPage() {
     return (
         <div className="supplier-list-page">
             <div className="supplier-head">
-                <h1>Contactos</h1>
-                <Link to="/contacts/new" className="seed-button primary">
+                <div>
+                    <h1>Contactos</h1>
+                    <p className="page-subtitle">
+                        Clientes, proveedores y colaboradores del vivero.
+                    </p>
+                </div>
+                <ModalLink to="/contacts/new" className="seed-button primary">
                     + Registrar contacto
-                </Link>
+                </ModalLink>
             </div>
 
             <div className="contact-toolbar">
