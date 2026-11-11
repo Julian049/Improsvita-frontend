@@ -55,3 +55,7 @@ export async function updateBed(id, payload) {
     const { data } = await axiosClient.put(`/beds/${id}`, toBedRequest(payload));
     return fromBedResponse(data);
 }
+
+export async function deleteBed(id) {
+    await axiosClient.delete(`/beds/${id}`);
+}

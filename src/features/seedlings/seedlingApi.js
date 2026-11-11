@@ -1,6 +1,5 @@
 // El backend no tiene una entidad de plántulas: son datos de cada siembra. GET /sowings trae
-// estimatedSeedlings (sembradas × % de germinación del lote) y germinatedQuantity (última revisión),
-// y las revisiones de germinación viven en /sowings/{id}/reviews.
+// seedlingsAvailable (última visita activa − ventas), estimatedSeedlings y germinatedQuantity.
 import axiosClient from '../../api/axiosClient';
 import { toDateOnly } from '../../utils/dateUtils';
 import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
@@ -15,15 +14,15 @@ function fromReviewResponse(review) {
     return {
         reviewId: review.id,
         sowingId: review.sowingId,
-        reviewDate: toDateOnly(review.reviewDate),
-        germinatedQuantity: Number(review.germinatedQuantity) || 0,
+        reviewDate: toDateOnly(review.visitDate),
+        germinatedQuantity: Number(review.suitableEstimated) || 0,
         notes: review.notes ?? '',
     };
 }
 
-// Plántulas disponibles: las germinadas si ya hay revisión; si no, la estimación del lote.
+// Plántulas disponibles para vender: las de la última visita activa, menos lo ya vendido.
 export function getSeedlingCount(sowing) {
-    return sowing.germinatedQuantity ?? sowing.estimatedSeedlings ?? null;
+    return sowing.seedlingsAvailable ?? sowing.germinatedQuantity ?? sowing.estimatedSeedlings ?? null;
 }
 
 // Cada siembra con los nombres de su semilla, lote y cama.
@@ -50,14 +49,16 @@ export async function getSowingReviews(sowingId) {
         return mockReviews.filter((r) => String(r.sowingId) === String(sowingId));
     }
 
-    const { data } = await axiosClient.get(`/sowings/${sowingId}/reviews`);
+    const { data } = await axiosClient.get(`/sowings/${sowingId}/visits`);
     return data.map(fromReviewResponse);
 }
 
 export async function createSowingReview(sowingId, payload) {
     const request = {
-        reviewDate: payload.reviewDate || null,
-        germinatedQuantity: Number(payload.germinatedQuantity),
+        visitDate: payload.reviewDate || null,
+        suitableEstimated: Number(payload.germinatedQuantity),
+        visitMethod: 'CONTEO_TOTAL',
+        result: 'CONTEO_FINAL',
         notes: payload.notes?.trim() || null,
     };
 
@@ -68,6 +69,6 @@ export async function createSowingReview(sowingId, payload) {
         return review;
     }
 
-    const { data } = await axiosClient.post(`/sowings/${sowingId}/reviews`, request);
+    const { data } = await axiosClient.post(`/sowings/${sowingId}/visits`, request);
     return fromReviewResponse(data);
 }

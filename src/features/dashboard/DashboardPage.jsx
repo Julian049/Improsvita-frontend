@@ -39,7 +39,12 @@ function DashboardPage() {
     return (
         <div className="dash-page">
             <div className="dash-head">
-                <h1>Panel principal</h1>
+                <div>
+                    <h1>Panel principal</h1>
+                    <p className="page-subtitle">
+                        Estado del inventario, siembras y actividad comercial del vivero.
+                    </p>
+                </div>
                 <div className="dash-actions">
                     <Link to="/lots/new" className="seed-button secondary">
                         + Registrar lote

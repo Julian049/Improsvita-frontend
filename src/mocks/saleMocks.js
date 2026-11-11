@@ -1,2 +1,2 @@
-// SUPUESTO: datos de prueba de ventas directas. El backend todavía no tiene este módulo.
+// Datos de prueba para cuando MOCK_CONFIG.sales esté activo.
 export const MOCK_SALES = [];

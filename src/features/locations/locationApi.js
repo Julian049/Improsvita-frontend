@@ -42,3 +42,7 @@ export async function updateLocation(id, payload) {
     const { data } = await axiosClient.put(`/locations/${id}`, toLocationRequest(payload));
     return fromLocationResponse(data);
 }
+
+export async function deleteLocation(id) {
+    await axiosClient.delete(`/locations/${id}`);
+}

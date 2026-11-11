@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { createSowingReview, getSeedlings, getSowingReviews } from './seedlingApi';
 import {
     REVIEW_FIELD_LABELS,
-    REVIEW_NOTES_MAX,
     getReviewFormInitialValues,
     validateReviewForm,
 } from './seedlingValidation';
@@ -140,12 +139,18 @@ function SeedlingReviewPage() {
                         </label>
 
                         <label className="catalog-field">
-                            <span>Observaciones (opcional)</span>
-                            <textarea maxLength={REVIEW_NOTES_MAX} value={values.notes} onChange={handleChange('notes')} />
+                            <span>Observaciones</span>
+                            <textarea
+                                rows="4"
+                                maxLength="500"
+                                placeholder="Describe el estado de las plántulas, incidencias o novedades."
+                                value={values.notes}
+                                onChange={handleChange('notes')}
+                            />
                             {errors.notes ? (
                                 <small className="field-error">{errors.notes}</small>
                             ) : (
-                                <small>{`${values.notes.length}/${REVIEW_NOTES_MAX}`}</small>
+                                <small>Opcional. Máximo 500 caracteres.</small>
                             )}
                         </label>
 
@@ -184,7 +189,7 @@ function SeedlingReviewPage() {
                             <tr key={review.reviewId}>
                                 <td>{formatDate(review.reviewDate)}</td>
                                 <td>{formatQty(review.germinatedQuantity)}</td>
-                                <td>{review.notes || '—'}</td>
+                                <td className="catalog-notes">{review.notes || '—'}</td>
                             </tr>
                         ))
                     )}

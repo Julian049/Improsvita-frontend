@@ -1,17 +1,17 @@
 .lot-list-page {
-    --lot-surface: #ffffff;
-    --lot-line: #e5e7eb;
-    --lot-soft: #f3f4f6;
-    --lot-text: #1f2937;
-    --lot-muted: #6b7280;
-    --lot-green: #2e7d32;
-    --lot-green-bg: #e8f5e9;
-    --lot-green-ring: #a7d7ac;
-    --lot-red: #b3261e;
-    --lot-red-bg: #fdecea;
-    --lot-red-line: #f5c6c2;
-    --lot-amb: #9a5b00;
-    --lot-amb-bg: #fff3dc;
+    --lot-surface: var(--color-surface);
+    --lot-line: var(--color-border);
+    --lot-soft: var(--color-surface-strong);
+    --lot-text: var(--color-ink);
+    --lot-muted: var(--color-muted);
+    --lot-green: var(--color-primary);
+    --lot-green-bg: var(--color-primary-soft);
+    --lot-green-ring: var(--color-primary);
+    --lot-red: var(--color-danger);
+    --lot-red-bg: var(--color-danger-soft);
+    --lot-red-line: #efc9c6;
+    --lot-amb: var(--color-warning);
+    --lot-amb-bg: var(--color-warning-soft);
 
     display: flex;
     flex-direction: column;
@@ -33,7 +33,7 @@
 .lot-list-loading,
 .lot-list-empty {
     padding: 32px;
-    color: #6b7280;
+    color: var(--color-muted);
 }
 
 .lot-list-empty {
@@ -44,11 +44,11 @@
 }
 
 .lot-list-message {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     padding: 32px;
-    color: #6b7280;
+    color: var(--color-muted);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -57,9 +57,9 @@
 }
 
 .lot-list-message.error {
-    color: #b3261e;
-    background: #fdecea;
-    border-color: #f5c6c2;
+    color: var(--color-danger);
+    background: var(--color-danger-soft);
+    border-color: #efc9c6;
     align-items: flex-start;
     text-align: left;
 }
@@ -128,6 +128,13 @@
 .lot-sort-select:focus,
 .lot-select:focus {
     border-color: var(--lot-green-ring);
+    box-shadow: 0 0 0 4px var(--color-primary-ring);
+}
+
+.lot-sort-select option,
+.lot-select option {
+    background: var(--color-surface);
+    color: var(--color-ink);
 }
 
 .lot-chips {
@@ -436,7 +443,7 @@
 }
 
 .lot-status-error {
-    color: #b3261e;
+    color: var(--color-danger);
 }
 
 @media (max-width: 900px) {

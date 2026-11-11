@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerRequest } from '../../api/authApi';
 import { getApiErrorMessage } from '../../api/apiError';
+import AuthShell from './AuthShell';
 import './LoginPage.css';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -75,11 +76,10 @@ function RegisterPage() {
     }
 
     return (
-        <div className="login-page">
-            <div className="login-card">
-                <div className="logo">Improsvita</div>
-                <p className="login-subtitle">Crea tu cuenta para empezar</p>
-
+        <AuthShell
+            title="Crear cuenta"
+            subtitle="Registra un usuario para acceder al sistema."
+        >
                 <form onSubmit={handleSubmit} className="login-form" noValidate>
                     <label className="login-field">
                         <span>Nombre</span>
@@ -134,15 +134,14 @@ function RegisterPage() {
                     {successMessage && <div className="login-success">{successMessage}</div>}
 
                     <button type="submit" className="login-button" disabled={isSubmitting}>
-                        {isSubmitting ? 'Creando cuenta...' : 'Registrarme'}
+                        {isSubmitting ? 'Creando cuenta...' : 'Crear cuenta'}
                     </button>
                 </form>
 
                 <p className="login-switch">
-                    ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
+                    ¿Ya tienes cuenta? <Link to="/login">Iniciar sesión</Link>
                 </p>
-            </div>
-        </div>
+        </AuthShell>
     );
 }
 

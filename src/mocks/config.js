@@ -6,7 +6,7 @@ export const MOCK_CONFIG = {
     sowings: false,
     beds: false,
     reservations: false,
-    sales: true,
+    sales: false,
     prediction: true,
 
     delayMs: 300,

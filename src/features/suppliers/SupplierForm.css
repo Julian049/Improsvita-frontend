@@ -89,41 +89,6 @@
     margin-top: 8px;
 }
 
-.seed-button {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.seed-button.primary {
-    background: #2e7d32;
-    color: #ffffff;
-}
-
-.seed-button.primary:hover:not(:disabled) {
-    background: #276b2b;
-}
-
-.seed-button.primary:disabled {
-    background: #a5b8a6;
-    cursor: not-allowed;
-}
-
-.seed-button.secondary {
-    background: #ffffff;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-}
-
-.seed-button.secondary:hover {
-    background: #f3f4f6;
-}
-
 @media (max-width: 640px) {
     .supplier-form-card {
         padding: 20px;

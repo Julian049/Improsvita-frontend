@@ -4,13 +4,13 @@
 
 .seed-form-loading {
     padding: 32px;
-    color: #6b7280;
+    color: var(--color-muted);
 }
 
 .seed-form-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     padding: 32px;
     max-width: 720px;
     margin-inline: auto;
@@ -21,7 +21,7 @@
 }
 
 .seed-form-subtitle {
-    color: #6b7280;
+    color: var(--color-muted);
     margin: 0 0 24px;
     font-size: 14px;
 }
@@ -46,26 +46,32 @@
     flex-direction: column;
     gap: 6px;
     font-size: 14px;
-    color: #374151;
+    color: var(--color-ink-soft);
 }
 
 .seed-field input,
 .seed-field select,
 .seed-field textarea {
     padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     font-size: 14px;
     font-family: inherit;
-    background: #ffffff;
+    background: var(--color-surface);
+    color: var(--color-ink);
+}
+
+.seed-field select option {
+    background: var(--color-surface);
+    color: var(--color-ink);
 }
 
 .seed-field input:focus,
 .seed-field select:focus,
 .seed-field textarea:focus {
-    outline: 2px solid #a7d7ac;
-    outline-offset: 1px;
-    border-color: #a7d7ac;
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px var(--color-primary-ring);
 }
 
 .seed-field textarea {
@@ -73,7 +79,7 @@
 }
 
 .field-error {
-    color: #b3261e;
+    color: var(--color-danger);
     font-size: 12px;
 }
 
@@ -84,13 +90,13 @@
 }
 
 .seed-form-message.error {
-    background: #fdecea;
-    color: #b3261e;
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
 }
 
 .seed-form-message.success {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--color-primary-soft);
+    color: var(--color-primary-strong);
 }
 
 .seed-form-actions {
@@ -98,39 +104,6 @@
     justify-content: flex-end;
     gap: 12px;
     margin-top: 8px;
-}
-
-.seed-button {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-}
-
-.seed-button.primary {
-    background: #2e7d32;
-    color: #ffffff;
-}
-
-.seed-button.primary:hover:not(:disabled) {
-    background: #276b2b;
-}
-
-.seed-button.primary:disabled {
-    background: #a5b8a6;
-    cursor: not-allowed;
-}
-
-.seed-button.secondary {
-    background: #ffffff;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-}
-
-.seed-button.secondary:hover {
-    background: #f3f4f6;
 }
 
 .seed-field textarea {
@@ -142,9 +115,9 @@
     flex-direction: column;
     gap: 8px;
     padding: 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
     max-height: 180px;
     overflow-y: auto;
 }
@@ -154,17 +127,17 @@
     align-items: center;
     gap: 8px;
     font-size: 14px;
-    color: #374151;
+    color: var(--color-ink-soft);
     cursor: pointer;
 }
 
 .seed-field-readonly {
     padding: 10px 12px;
-    border: 1px dashed #e5e7eb;
-    border-radius: 8px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
     font-size: 14px;
-    background: #f9fafb;
-    color: #374151;
+    background: var(--color-surface-muted);
+    color: var(--color-ink-soft);
 }
 
 @media (max-width: 640px) {
@@ -197,9 +170,9 @@
     gap: 8px;
     margin-top: 8px;
     padding: 12px;
-    border: 1px dashed #d1d5db;
-    border-radius: 10px;
-    background: #f9fafb;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-muted);
 }
 .seed-type-actions {
     display: flex;
@@ -214,7 +187,7 @@
     font: inherit;
     font-size: 13px;
     font-weight: 600;
-    color: #2e7d32;
+    color: var(--color-primary);
     cursor: pointer;
 }
 
@@ -223,5 +196,5 @@
 }
 
 .seed-type-link.danger {
-    color: #b3261e;
+    color: var(--color-danger);
 }

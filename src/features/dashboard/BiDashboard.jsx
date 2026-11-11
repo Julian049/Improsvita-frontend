@@ -36,7 +36,24 @@ function BiDashboard() {
 
     return (
         <section className="dash-box dash-bi" aria-label="Dashboard de Power BI">
-            <h3>Dashboard de Power BI</h3>
+            <div className="dash-bi-head">
+                <div className="dash-bi-title">
+                    <h3>Dashboard de Power BI</h3>
+                    <p className="dash-bi-subtitle">
+                        Ventas, producción y comportamiento comercial del vivero.
+                    </p>
+                </div>
+                {DASHBOARD_URL && (
+                    <a
+                        className="dash-bi-link"
+                        href={DASHBOARD_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Abrir en pestaña nueva ↗
+                    </a>
+                )}
+            </div>
 
             {!DASHBOARD_URL && <p className="dash-muted">Todavía no está configurado.</p>}
 
@@ -57,12 +74,6 @@ function BiDashboard() {
                     src={DASHBOARD_URL}
                     onLoad={() => setStatus('ready')}
                 />
-            )}
-
-            {DASHBOARD_URL && (
-                <a href={DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
-                    Abrir en una pestaña nueva
-                </a>
             )}
         </section>
     );

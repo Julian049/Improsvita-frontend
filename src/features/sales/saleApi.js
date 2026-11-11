@@ -4,38 +4,35 @@ import { MOCK_SALES } from '../../mocks/saleMocks';
 
 function toSaleRequest(payload) {
     return {
-        clientId: Number(payload.clientId),
+        contactId: Number(payload.clientId),
         sowingId: Number(payload.sowingId),
         quantity: Number(payload.quantity),
-        totalPrice: Number(payload.totalPrice),
+        unitPrice: Number(payload.unitPrice),
         saleDate: payload.saleDate || null,
         notes: payload.notes?.trim() || null,
     };
 }
 
-// SUPUESTO: aún no existe POST /sales; el body y la respuesta son una suposición.
 export async function createSale(payload) {
     const request = toSaleRequest(payload);
 
     if (MOCK_CONFIG.sales) {
         await mockDelay();
-        const sale = { id: `s-${MOCK_SALES.length + 1}`, ...request };
+        const sale = {
+            id: `s-${MOCK_SALES.length + 1}`,
+            ...request,
+            total: request.quantity * request.unitPrice,
+            saleType: 'DIRECT',
+            active: true,
+        };
         MOCK_SALES.push(sale);
         return sale;
     }
 
-    try {
-        const { data } = await axiosClient.post('/sales', request);
-        return data;
-    } catch (err) {
-        if (err.response?.status === 404 || err.response?.status === 405) {
-            err.userMessage = 'El servidor todavía no permite registrar ventas.';
-        }
-        throw err;
-    }
+    const { data } = await axiosClient.post('/sales', request);
+    return data;
 }
 
-// SUPUESTO: aún no existe GET /sales.
 export async function getSales() {
     if (MOCK_CONFIG.sales) {
         await mockDelay();
@@ -43,5 +40,21 @@ export async function getSales() {
     }
 
     const { data } = await axiosClient.get('/sales');
+    return data;
+}
+
+export async function getSaleAvailability(sowingId) {
+    const { data } = await axiosClient.get(`/sales/availability/${sowingId}`);
+    return data;
+}
+
+export async function deliverReservation({ reservationId, quantity, unitPrice, saleDate, notes }) {
+    const { data } = await axiosClient.post('/sales/reservation', {
+        reservationId: Number(reservationId),
+        quantity: Number(quantity),
+        unitPrice: Number(unitPrice),
+        saleDate: saleDate || null,
+        notes: notes?.trim() || null,
+    });
     return data;
 }

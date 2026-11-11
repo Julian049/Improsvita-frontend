@@ -1,7 +1,5 @@
 import { getTodayDateString } from '../sowings/sowingUtils';
 
-export const REVIEW_NOTES_MAX = 1000;
-
 export const REVIEW_FIELD_LABELS = {
     reviewDate: 'Fecha de revisión',
     germinatedQuantity: 'Cantidad germinada',
@@ -31,8 +29,8 @@ export function validateReviewForm(values, { quantitySown, sowingDate } = {}) {
         errors.reviewDate = 'No puede ser anterior a la fecha de siembra.';
     }
 
-    if ((values.notes ?? '').trim().length > REVIEW_NOTES_MAX) {
-        errors.notes = `Máximo ${REVIEW_NOTES_MAX} caracteres.`;
+    if (String(values.notes ?? '').length > 500) {
+        errors.notes = 'No puede superar los 500 caracteres.';
     }
 
     return errors;

@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
+import RecordModal from '../components/ui/RecordModal.jsx';
 import LoginPage from '../features/auth/LoginPage';
 import RegisterPage from '../features/auth/RegisterPage';
 import SeedFormPage from '../features/seeds/seedsForm/SeedFormPage.jsx';
@@ -26,10 +28,33 @@ import HistoryPage from '../features/history/HistoryPage.jsx';
 import PredictionPage from '../features/prediction/PredictionPage.jsx';
 import SaleFormPage from '../features/sales/SaleFormPage.jsx';
 
-function AppRouter() {
+const MODAL_FORMS = [
+    { path: '/seeds/new', element: <SeedFormPage /> },
+    { path: '/lots/new', element: <LotFormPage /> },
+    { path: '/sowings/new', element: <SowingFormPage /> },
+    { path: '/contacts/new', element: <ContactFormPage /> },
+    { path: '/reservations/new', element: <ReservationFormPage /> },
+    { path: '/beds/new', element: <BedFormPage /> },
+    { path: '/locations/new', element: <LocationFormPage /> },
+    { path: '/seed-types/new', element: <SeedTypeFormPage /> },
+];
+
+function AppRoutes() {
+    const location = useLocation();
+    const backgroundLocation = location.state?.backgroundLocation;
+    const previousBackground = useRef(backgroundLocation);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    useEffect(() => {
+        if (previousBackground.current && !backgroundLocation) {
+            setRefreshKey((key) => key + 1);
+        }
+        previousBackground.current = backgroundLocation;
+    }, [backgroundLocation]);
+
     return (
-        <BrowserRouter>
-            <Routes>
+        <>
+            <Routes location={backgroundLocation || location} key={refreshKey}>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
@@ -74,6 +99,26 @@ function AppRouter() {
                     </Route>
                 {/*</Route>*/}
             </Routes>
+
+            {backgroundLocation && (
+                <Routes>
+                    {MODAL_FORMS.map(({ path, element }) => (
+                        <Route
+                            key={path}
+                            path={path}
+                            element={<RecordModal>{element}</RecordModal>}
+                        />
+                    ))}
+                </Routes>
+            )}
+        </>
+    );
+}
+
+function AppRouter() {
+    return (
+        <BrowserRouter>
+            <AppRoutes />
         </BrowserRouter>
     );
 }

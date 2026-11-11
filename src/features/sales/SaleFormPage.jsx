@@ -102,85 +102,92 @@ function SaleFormPage() {
 
     return (
         <div className="catalog-page">
-            <div className="catalog-form-card">
+            <div className="catalog-form-card catalog-form-card-wide">
                 <h2>Venta directa</h2>
                 <p className="catalog-form-subtitle">
-                    Vende plántulas de una siembra a un cliente sin reserva previa.
+                    Registra la venta de plántulas de una siembra sin reserva previa.
                 </p>
 
                 <form onSubmit={handleSubmit} className="catalog-form" noValidate>
-                    <label className="catalog-field">
-                        <span>Cliente *</span>
-                        <SearchSelect
-                            value={values.clientId}
-                            onChange={handleChange('clientId')}
-                            placeholder="Busca un cliente"
-                            aria-label="Cliente"
-                            options={clients.map((client) => ({
-                                value: client.clientId,
-                                label: client.name,
-                            }))}
-                        />
-                        {errors.clientId && <small className="field-error">{errors.clientId}</small>}
-                    </label>
+                    <div className="catalog-form-grid">
+                        <label className="catalog-field">
+                            <span>Cliente *</span>
+                            <SearchSelect
+                                value={values.clientId}
+                                onChange={handleChange('clientId')}
+                                placeholder="Busca un cliente"
+                                aria-label="Cliente"
+                                options={clients.map((client) => ({
+                                    value: client.clientId,
+                                    label: client.name,
+                                }))}
+                            />
+                            {errors.clientId && <small className="field-error">{errors.clientId}</small>}
+                        </label>
 
-                    <label className="catalog-field">
-                        <span>Siembra *</span>
-                        <SearchSelect
-                            value={values.sowingId}
-                            onChange={handleChange('sowingId')}
-                            placeholder="Busca una siembra"
-                            aria-label="Siembra"
-                            options={sowingOptions}
-                        />
-                        {errors.sowingId && <small className="field-error">{errors.sowingId}</small>}
-                    </label>
+                        <label className="catalog-field">
+                            <span>Siembra *</span>
+                            <SearchSelect
+                                value={values.sowingId}
+                                onChange={handleChange('sowingId')}
+                                placeholder="Busca una siembra"
+                                aria-label="Siembra"
+                                options={sowingOptions}
+                            />
+                            {errors.sowingId && <small className="field-error">{errors.sowingId}</small>}
+                        </label>
 
-                    <label className="catalog-field">
-                        <span>Cantidad *</span>
-                        <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            inputMode="numeric"
-                            className="no-spinner"
-                            value={values.quantity}
-                            onChange={handleChange('quantity')}
-                        />
-                        {available != null && (
-                            <small>Disponibles: {formatQty(available)} plántulas</small>
-                        )}
-                        {errors.quantity && <small className="field-error">{errors.quantity}</small>}
-                    </label>
+                        <label className="catalog-field">
+                            <span>Cantidad *</span>
+                            <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                inputMode="numeric"
+                                className="no-spinner"
+                                value={values.quantity}
+                                onChange={handleChange('quantity')}
+                            />
+                            {available != null && (
+                                <small>Disponibles: {formatQty(available)} plántulas</small>
+                            )}
+                            {errors.quantity && <small className="field-error">{errors.quantity}</small>}
+                        </label>
 
-                    <label className="catalog-field">
-                        <span>Precio total *</span>
-                        <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            inputMode="decimal"
-                            className="no-spinner"
-                            value={values.totalPrice}
-                            onChange={handleChange('totalPrice')}
-                        />
-                        {errors.totalPrice && <small className="field-error">{errors.totalPrice}</small>}
-                    </label>
+                        <label className="catalog-field">
+                            <span>Precio unitario *</span>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                inputMode="decimal"
+                                className="no-spinner"
+                                value={values.unitPrice}
+                                onChange={handleChange('unitPrice')}
+                            />
+                            {values.quantity !== '' && values.unitPrice !== '' && (
+                                <small>
+                                    Total: $ {formatQty(Number(values.quantity) * Number(values.unitPrice))}
+                                </small>
+                            )}
+                            {errors.unitPrice && <small className="field-error">{errors.unitPrice}</small>}
+                        </label>
 
-                    <label className="catalog-field">
-                        <span>Fecha de venta *</span>
-                        <input
-                            type="date"
-                            value={values.saleDate}
-                            onChange={handleChange('saleDate')}
-                        />
-                        {errors.saleDate && <small className="field-error">{errors.saleDate}</small>}
-                    </label>
+                        <label className="catalog-field">
+                            <span>Fecha de venta *</span>
+                            <input
+                                type="date"
+                                value={values.saleDate}
+                                onChange={handleChange('saleDate')}
+                            />
+                            {errors.saleDate && <small className="field-error">{errors.saleDate}</small>}
+                        </label>
 
-                    <label className="catalog-field">
-                        <span>Notas</span>
-                        <textarea rows="3" value={values.notes} onChange={handleChange('notes')} />
-                    </label>
+                        <label className="catalog-field catalog-field-wide">
+                            <span>Notas</span>
+                            <textarea rows="2" value={values.notes} onChange={handleChange('notes')} />
+                        </label>
+                    </div>
 
                     {submitMessage && (
                         <div className={`catalog-form-message ${submitMessage.type}`}>
