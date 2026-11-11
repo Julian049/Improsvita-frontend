@@ -138,6 +138,22 @@ function SeedlingReviewPage() {
                             {errors.reviewDate && <small className="field-error">{errors.reviewDate}</small>}
                         </label>
 
+                        <label className="catalog-field">
+                            <span>Observaciones</span>
+                            <textarea
+                                rows="4"
+                                maxLength="500"
+                                placeholder="Describe el estado de las plántulas, incidencias o novedades."
+                                value={values.notes}
+                                onChange={handleChange('notes')}
+                            />
+                            {errors.notes ? (
+                                <small className="field-error">{errors.notes}</small>
+                            ) : (
+                                <small>Opcional. Máximo 500 caracteres.</small>
+                            )}
+                        </label>
+
                         {submitMessage && (
                             <div className={`catalog-form-message ${submitMessage.type}`}>{submitMessage.text}</div>
                         )}
@@ -160,18 +176,20 @@ function SeedlingReviewPage() {
                     <tr>
                         <th>Fecha</th>
                         <th>Germinadas</th>
+                        <th>Observaciones</th>
                     </tr>
                     </thead>
                     <tbody>
                     {sortedReviews.length === 0 ? (
                         <tr>
-                            <td colSpan={2}>Sin revisiones todavía.</td>
+                            <td colSpan={3}>Sin revisiones todavía.</td>
                         </tr>
                     ) : (
                         sortedReviews.map((review) => (
                             <tr key={review.reviewId}>
                                 <td>{formatDate(review.reviewDate)}</td>
                                 <td>{formatQty(review.germinatedQuantity)}</td>
+                                <td className="catalog-notes">{review.notes || '—'}</td>
                             </tr>
                         ))
                     )}

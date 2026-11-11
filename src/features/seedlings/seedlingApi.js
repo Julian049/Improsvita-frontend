@@ -16,7 +16,7 @@ function fromReviewResponse(review) {
         sowingId: review.sowingId,
         reviewDate: toDateOnly(review.visitDate),
         germinatedQuantity: Number(review.suitableEstimated) || 0,
-        notes: '',
+        notes: review.notes ?? '',
     };
 }
 
@@ -59,6 +59,7 @@ export async function createSowingReview(sowingId, payload) {
         suitableEstimated: Number(payload.germinatedQuantity),
         visitMethod: 'CONTEO_TOTAL',
         result: 'CONTEO_FINAL',
+        notes: payload.notes?.trim() || null,
     };
 
     if (MOCK_CONFIG.sowings) {

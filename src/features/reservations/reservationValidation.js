@@ -23,7 +23,9 @@ export function getReservationStatusLabel(status) {
 }
 
 export const EDITABLE_STATUS_OPTIONS = RESERVATION_STATUS_OPTIONS.filter(
-    (option) => option.value !== RESERVATION_STATUS.CANCELLED
+    (option) =>
+        option.value !== RESERVATION_STATUS.DELIVERED &&
+        option.value !== RESERVATION_STATUS.CANCELLED
 );
 
 export function isLiveReservation(reservation) {

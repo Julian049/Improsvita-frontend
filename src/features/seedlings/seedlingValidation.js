@@ -3,6 +3,7 @@ import { getTodayDateString } from '../sowings/sowingUtils';
 export const REVIEW_FIELD_LABELS = {
     reviewDate: 'Fecha de revisión',
     germinatedQuantity: 'Cantidad germinada',
+    notes: 'Observaciones',
 };
 
 // Mismas reglas que SowingReviewService del backend.
@@ -28,9 +29,13 @@ export function validateReviewForm(values, { quantitySown, sowingDate } = {}) {
         errors.reviewDate = 'No puede ser anterior a la fecha de siembra.';
     }
 
+    if (String(values.notes ?? '').length > 500) {
+        errors.notes = 'No puede superar los 500 caracteres.';
+    }
+
     return errors;
 }
 
 export function getReviewFormInitialValues() {
-    return { reviewDate: getTodayDateString(), germinatedQuantity: '' };
+    return { reviewDate: getTodayDateString(), germinatedQuantity: '', notes: '' };
 }

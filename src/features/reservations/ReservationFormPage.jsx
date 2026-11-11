@@ -74,6 +74,16 @@ function ReservationFormPage() {
 
     const status = values.status;
     const isLocked = isEditing && status === RESERVATION_STATUS.CANCELLED;
+    const statusOptions = EDITABLE_STATUS_OPTIONS.some((option) => option.value === values.status)
+        ? EDITABLE_STATUS_OPTIONS
+        : [
+            {
+                value: values.status,
+                label: getReservationStatusLabel(values.status),
+                disabled: true,
+            },
+            ...EDITABLE_STATUS_OPTIONS,
+        ];
 
     const sowingOptions = useMemo(
         () =>
@@ -233,8 +243,12 @@ function ReservationFormPage() {
                             <label className="catalog-field">
                                 <span>Estado</span>
                                 <select value={values.status} onChange={handleChange('status')}>
-                                    {EDITABLE_STATUS_OPTIONS.map((option) => (
-                                        <option key={option.value} value={option.value}>
+                                    {statusOptions.map((option) => (
+                                        <option
+                                            key={option.value}
+                                            value={option.value}
+                                            disabled={option.disabled}
+                                        >
                                             {option.label}
                                         </option>
                                     ))}
