@@ -154,6 +154,8 @@
 
 .sowing-bed {
     flex: 0 0 150px;
+    min-width: 0;
+    max-width: 100%;
     background: var(--sowing-surface);
     border: 1px solid var(--sowing-line);
     border-radius: 12px;
@@ -181,15 +183,30 @@
 }
 
 .sowing-bed b {
+    min-width: 0;
     font-size: 15px;
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
+    gap: 4px 8px;
+    overflow-wrap: break-word;
+}
+
+.sowing-bed b span {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+.sowing-bed b small {
+    flex: none;
+    margin-left: auto;
 }
 
 .sowing-bed small {
     color: var(--sowing-muted);
     font-size: 12px;
     font-weight: 400;
+    overflow-wrap: break-word;
 }
 
 .sowing-fill {
@@ -220,10 +237,12 @@
     grid-template-columns: repeat(5, minmax(210px, 1fr));
     gap: 14px;
     align-items: start;
+    min-width: 0;
     overflow-x: auto;
 }
 
 .sowing-col {
+    min-width: 0;
     background: var(--sowing-soft);
     border-radius: 14px;
     padding: 10px;
@@ -234,14 +253,17 @@
 }
 
 .sowing-ch {
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 4px 6px;
     font-weight: 700;
+    overflow-wrap: break-word;
 }
 
 .sowing-ch i {
+    flex: none;
     width: 10px;
     height: 10px;
     border-radius: 50%;
@@ -249,6 +271,7 @@
 }
 
 .sowing-ch span {
+    flex: none;
     margin-left: auto;
     background: var(--sowing-surface);
     border-radius: 99px;
@@ -266,6 +289,8 @@
 
 /* Tarjeta */
 .sowing-card {
+    min-width: 0;
+    max-width: 100%;
     background: var(--sowing-surface);
     border: 1px solid var(--sowing-line);
     border-left: 4px solid var(--sowing-c);
@@ -276,6 +301,7 @@
     gap: 12px;
     cursor: pointer;
     transition: box-shadow 0.15s;
+    overflow-wrap: break-word;
 }
 
 .sowing-card:hover {
@@ -283,34 +309,52 @@
 }
 
 .sowing-r1 {
+    min-width: 0;
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     gap: 8px;
     align-items: flex-start;
+}
+
+.sowing-r1 > div {
+    flex: 1 1 140px;
+    min-width: 0;
 }
 
 .sowing-r1 h4 {
     margin: 0;
     font-size: 15px;
     line-height: 1.25;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .sowing-r1 small {
+    display: block;
     color: var(--sowing-muted);
+    overflow-wrap: break-word;
 }
 
 .sowing-tag {
+    flex: 0 1 auto;
+    max-width: 100%;
+    margin-left: auto;
     font-size: 12px;
     font-weight: 600;
+    line-height: 1.25;
     padding: 2px 9px;
     border-radius: 99px;
     background: var(--sowing-cb);
     color: var(--sowing-c);
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-align: right;
     border: 1px solid var(--sowing-line);
 }
 
 .sowing-r2 {
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -355,10 +399,15 @@
 }
 
 .sowing-nums {
+    min-width: 0;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2px 14px;
+    grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+    gap: 6px 14px;
     flex: 1;
+}
+
+.sowing-nums > div {
+    min-width: 0;
 }
 
 .sowing-nums span {
@@ -369,24 +418,38 @@
 
 .sowing-nums b {
     font-size: 15px;
+    overflow-wrap: break-word;
 }
 
 .sowing-r3 {
+    min-width: 0;
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     font-size: 12px;
     color: var(--sowing-muted);
 }
 
+.sowing-r3 > span:first-child {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
 .sowing-when {
+    flex: 0 1 auto;
+    max-width: 100%;
+    margin-left: auto;
     font-weight: 600;
+    line-height: 1.25;
     padding: 2px 9px;
     border-radius: 99px;
     background: var(--sowing-soft);
     color: var(--sowing-text);
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-align: right;
 }
 
 .sowing-when.warn {
@@ -443,9 +506,14 @@
     border-bottom: 1px solid var(--sowing-line);
 }
 
+.sowing-dialog-head > div {
+    min-width: 0;
+}
+
 .sowing-dialog-head h2 {
     margin: 0 0 8px;
     font-size: 22px;
+    overflow-wrap: break-word;
 }
 
 .sowing-tags {
@@ -456,6 +524,7 @@
 }
 
 .sowing-x {
+    flex: none;
     background: none;
     border: 0;
     cursor: pointer;
