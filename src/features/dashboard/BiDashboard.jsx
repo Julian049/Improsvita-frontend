@@ -13,7 +13,9 @@ function getValidUrl(raw) {
     }
 }
 
-const DASHBOARD_URL = getValidUrl(import.meta.env.VITE_DASHBOARD_URL);
+const DEFAULT_DASHBOARD_URL = 'https://app.powerbi.com/view?r=eyJrIjoiMGJlNDZkMmUtNjI4OC00ZjAxLWJhYzEtMjhjYTZlNDE0NzgxIiwidCI6ImM2ZTIwZTQzLWNmY2QtNDg5ZS1hMjY2LTQxOGY1NmRmMTI0YyIsImMiOjR9';
+
+const DASHBOARD_URL = getValidUrl(import.meta.env.VITE_DASHBOARD_URL || DEFAULT_DASHBOARD_URL);
 
 function BiDashboard() {
     const [status, setStatus] = useState('loading');
