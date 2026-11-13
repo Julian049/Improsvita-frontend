@@ -63,7 +63,14 @@ function SeedlingReviewPage() {
         try {
             const review = await createSowingReview(id, values);
             setReviews((prev) => [...prev, review]);
-            setSowing((prev) => ({ ...prev, germinatedQuantity: review.germinatedQuantity }));
+            setSowing((prev) => ({
+                ...prev,
+                germinatedQuantity: review.germinatedQuantity,
+                seedlingsAvailable: Math.max(
+                    0,
+                    review.germinatedQuantity - (Number(prev.soldQuantity) || 0)
+                ),
+            }));
             setValues(getReviewFormInitialValues());
             setSubmitMessage({ type: 'success', text: 'Revisión registrada.' });
         } catch (err) {
@@ -98,7 +105,8 @@ function SeedlingReviewPage() {
                     {getSowingStatusLabel(sowing.status)}
                     <br />
                     Estimadas: {sowing.estimatedSeedlings == null ? '—' : formatQty(sowing.estimatedSeedlings)} ·
-                    Germinadas: {sowing.germinatedQuantity == null ? '—' : formatQty(sowing.germinatedQuantity)}
+                    Germinadas: {sowing.germinatedQuantity == null ? '—' : formatQty(sowing.germinatedQuantity)} ·
+                    Disponibles: {formatQty(sowing.seedlingsAvailable ?? 0)}
                 </p>
 
                 {isClosed ? (

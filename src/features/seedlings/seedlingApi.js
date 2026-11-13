@@ -20,9 +20,14 @@ function fromReviewResponse(review) {
     };
 }
 
-// Plántulas disponibles para vender: las de la última visita activa, menos lo ya vendido.
+// Germinadas reales según la última revisión (sin descontar ventas).
+export function getGerminatedCount(sowing) {
+    return sowing.germinatedQuantity ?? null;
+}
+
+// Disponibles para vender: germinadas de la última revisión menos ventas activas.
 export function getSeedlingCount(sowing) {
-    return sowing.seedlingsAvailable ?? sowing.germinatedQuantity ?? sowing.estimatedSeedlings ?? null;
+    return sowing.seedlingsAvailable ?? 0;
 }
 
 // Cada siembra con los nombres de su semilla, lote y cama.
