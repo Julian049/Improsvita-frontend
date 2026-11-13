@@ -40,6 +40,7 @@ function SeedlingListPage() {
                         <th>Sembradas</th>
                         <th>Estimadas</th>
                         <th>Germinadas</th>
+                        <th>Disponibles</th>
                         <th>Siembra</th>
                         <th>Estado</th>
                         <th />
@@ -55,6 +56,7 @@ function SeedlingListPage() {
                             <td>{formatQty(sowing.quantitySown)}</td>
                             <td>{qtyOrDash(sowing.estimatedSeedlings)}</td>
                             <td>{qtyOrDash(sowing.germinatedQuantity)}</td>
+                            <td className="catalog-number">{qtyOrDash(sowing.seedlingsAvailable)}</td>
                             <td>{formatDate(sowing.sowingDate)}</td>
                             <td>
                                 <span className="catalog-badge">{getSowingStatusLabel(sowing.status)}</span>

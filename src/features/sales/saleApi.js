@@ -1,4 +1,5 @@
 import axiosClient from '../../api/axiosClient';
+import { toDateOnly } from '../../utils/dateUtils';
 import { MOCK_CONFIG, mockDelay } from '../../mocks/config';
 import { MOCK_SALES } from '../../mocks/saleMocks';
 
@@ -33,13 +34,24 @@ export async function createSale(payload) {
     return data;
 }
 
-export async function getSales() {
+export async function getSales(filters = {}) {
+    const params = {};
+    if (filters.contactId != null) params.contactId = filters.contactId;
+    if (filters.type) params.type = filters.type;
+    if (filters.from) params.from = toDateOnly(filters.from);
+    if (filters.to) params.to = toDateOnly(filters.to);
+
     if (MOCK_CONFIG.sales) {
         await mockDelay();
-        return [...MOCK_SALES];
+        return MOCK_SALES.filter((sale) => {
+            const saleDate = toDateOnly(sale.saleDate);
+            return (!params.from || saleDate >= params.from) && (!params.to || saleDate <= params.to);
+        });
     }
 
-    const { data } = await axiosClient.get('/sales');
+    const { data } = await axiosClient.get('/sales', {
+        params: Object.keys(params).length ? params : undefined,
+    });
     return data;
 }
 

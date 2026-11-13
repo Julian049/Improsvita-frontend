@@ -4,14 +4,19 @@ import { createSale } from './saleApi';
 import { SALE_FIELD_LABELS, getSaleFormInitialValues, validateSaleForm } from './saleValidation';
 import { getSeedlingCount, getSeedlings } from '../seedlings/seedlingApi';
 import { getClients } from '../clients/clientApi';
+import { getReservations } from '../reservations/reservationApi';
+import { isLiveReservation } from '../reservations/reservationValidation';
 import { SOWING_STATUS } from '../sowings/sowingStatus';
 import { getApiErrorMessage } from '../../api/apiError';
 import { formatQty } from '../../utils/numberUtils';
 import SearchSelect from '../../components/ui/SearchSelect.jsx';
 import '../../components/ui/Catalog.css';
 
-// Siembras que ya no producen plántulas vendibles.
-const NOT_SELLABLE = [SOWING_STATUS.FAILED, SOWING_STATUS.CANCELLED];
+const SELLABLE_STATUSES = [
+    SOWING_STATUS.PLANNED,
+    SOWING_STATUS.IN_PROGRESS,
+    SOWING_STATUS.COMPLETED,
+];
 
 function SaleFormPage() {
     const navigate = useNavigate();
@@ -19,6 +24,7 @@ function SaleFormPage() {
     const [values, setValues] = useState(getSaleFormInitialValues);
     const [clients, setClients] = useState([]);
     const [seedlings, setSeedlings] = useState([]);
+    const [reservations, setReservations] = useState([]);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
@@ -26,18 +32,33 @@ function SaleFormPage() {
     const [submitMessage, setSubmitMessage] = useState(null);
 
     useEffect(() => {
-        Promise.all([getClients(), getSeedlings()])
-            .then(([clientsData, seedlingsData]) => {
+        Promise.all([getClients(), getSeedlings(), getReservations()])
+            .then(([clientsData, seedlingsData, reservationsData]) => {
                 setClients(clientsData);
                 setSeedlings(seedlingsData);
+                setReservations(reservationsData);
             })
             .catch(() => setLoadError('No se pudieron cargar los datos del formulario.'))
             .finally(() => setIsLoading(false));
     }, []);
 
+    const reservationsBySowing = useMemo(() => {
+        const liveBySowing = new Set();
+        reservations.filter(isLiveReservation).forEach((reservation) => {
+            liveBySowing.add(String(reservation.sowingId));
+        });
+        return liveBySowing;
+    }, [reservations]);
+
     const sellable = useMemo(
-        () => seedlings.filter((sowing) => !NOT_SELLABLE.includes(sowing.status)),
-        [seedlings]
+        () =>
+            seedlings.filter(
+                (sowing) =>
+                    SELLABLE_STATUSES.includes(sowing.status) &&
+                    getSeedlingCount(sowing) > 0 &&
+                    !reservationsBySowing.has(String(sowing.sowingId))
+            ),
+        [seedlings, reservationsBySowing]
     );
     const sowingOptions = useMemo(
         () =>
@@ -45,9 +66,7 @@ function SaleFormPage() {
                 const count = getSeedlingCount(sowing);
                 return {
                     value: sowing.sowingId,
-                    label: `${sowing.seedName || 'Siembra'} · Lote ${sowing.lotNumber || '—'} · Cama ${sowing.bedCode || '—'}${
-                        count != null ? ` · ${formatQty(count)} plántulas` : ''
-                    }`,
+                    label: `${sowing.seedName || 'Siembra'} · Lote ${sowing.lotNumber || '—'} · Cama ${sowing.bedCode || '—'} · ${formatQty(count)} disponibles`,
                 };
             }),
         [sellable]
@@ -60,6 +79,14 @@ function SaleFormPage() {
             setValues((prev) => ({ ...prev, [field]: e.target.value }));
             setErrors((prev) => ({ ...prev, [field]: undefined }));
         };
+    }
+
+    async function refreshSeedlings() {
+        try {
+            setSeedlings(await getSeedlings());
+        } catch {
+            // La venta ya se registró; si falla el refresco se conserva el stock anterior.
+        }
     }
 
     async function handleSubmit(e) {
@@ -81,11 +108,13 @@ function SaleFormPage() {
             await createSale(values);
             setValues(getSaleFormInitialValues());
             setSubmitMessage({ type: 'success', text: 'Venta registrada correctamente.' });
+            await refreshSeedlings();
         } catch (err) {
             setSubmitMessage({
                 type: 'error',
                 text: getApiErrorMessage(err, 'No se pudo registrar la venta. Intenta nuevamente.'),
             });
+            await refreshSeedlings();
         } finally {
             setIsSubmitting(false);
         }
