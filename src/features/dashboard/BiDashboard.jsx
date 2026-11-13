@@ -35,12 +35,12 @@ function BiDashboard() {
     }
 
     return (
-        <section className="dash-box dash-bi" aria-label="Dashboard de Power BI">
+        <section className="dash-box dash-bi" aria-label="Análisis histórico de Power BI">
             <div className="dash-bi-head">
                 <div className="dash-bi-title">
-                    <h3>Dashboard de Power BI</h3>
+                    <h3>Análisis histórico · Power BI</h3>
                     <p className="dash-bi-subtitle">
-                        Ventas, producción y comportamiento comercial del vivero.
+                        Reporte de ventas, producción y comportamiento comercial del vivero.
                     </p>
                 </div>
                 {DASHBOARD_URL && (

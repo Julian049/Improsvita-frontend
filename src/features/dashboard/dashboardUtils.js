@@ -5,6 +5,52 @@ import { getEstimatedProduction, getGerminationTiming } from '../sowings/sowings
 // Un lote con menos del 30% de su cantidad inicial se considera con poco stock (mismo umbral que la lista de lotes).
 const LOW_STOCK_RATIO = 0.3;
 
+function toDateKey(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function toSaleDate(sale) {
+    return String(sale?.saleDate ?? '').slice(0, 10);
+}
+
+function toAmount(value) {
+    const amount = Number(value);
+    return Number.isFinite(amount) ? amount : 0;
+}
+
+export function getCommercialData({ sales = [], reservations = [], today = new Date() }) {
+    const todayKey = toDateKey(today);
+    const monthKey = todayKey.slice(0, 7);
+    const activeSales = sales.filter((sale) => sale.active !== false);
+    const monthSales = activeSales.filter((sale) => toSaleDate(sale).startsWith(monthKey));
+    const todaySales = monthSales.filter((sale) => toSaleDate(sale) === todayKey);
+    const pendingReservations = reservations.filter(
+        (reservation) => reservation.active !== false && reservation.status === 'PENDING'
+    ).length;
+
+    const lastSale = monthSales.reduce((latest, sale) => {
+        if (!latest) return sale;
+        const saleDate = toSaleDate(sale);
+        const latestDate = toSaleDate(latest);
+        if (saleDate > latestDate) return sale;
+        if (saleDate === latestDate && Number(sale.id) > Number(latest.id)) return sale;
+        return latest;
+    }, null);
+
+    return {
+        salesToday: todaySales.length,
+        unitsToday: todaySales.reduce((sum, sale) => sum + toAmount(sale.quantity), 0),
+        revenueToday: todaySales.reduce((sum, sale) => sum + toAmount(sale.total), 0),
+        salesMonth: monthSales.length,
+        revenueMonth: monthSales.reduce((sum, sale) => sum + toAmount(sale.total), 0),
+        pendingReservations,
+        lastSale,
+    };
+}
+
 export function getDashboardData({ seeds, lots, sowings, beds }) {
     const seedNameById = new Map(seeds.map((s) => [String(s.seedId), s.name]));
     const lotById = new Map(lots.map((l) => [String(l.lotId), l]));
@@ -22,15 +68,19 @@ export function getDashboardData({ seeds, lots, sowings, beds }) {
                 bedCode: beds.find((b) => String(b.bedId) === String(s.bedId))?.code ?? '',
             };
         });
-    const estimates = openSowings.map(getEstimatedProduction);
+    // La última revisión manda sobre el % esperado del lote.
+    const production = openSowings.map(
+        (s) => s.germinatedQuantity ?? getEstimatedProduction(s)
+    );
 
     return {
         activeSeeds: seeds.filter((s) => s.active).length,
         availableStock: availableLots.reduce((sum, l) => sum + Number(l.availableQuantity), 0),
         availableLotCount: availableLots.length,
         openSowingCount: openSowings.length,
-        estimatedProduction: estimates.reduce((sum, e) => sum + (e ?? 0), 0),
-        sowingsWithoutPercent: estimates.filter((e) => e == null).length,
+        estimatedProduction: production.reduce((sum, e) => sum + (e ?? 0), 0),
+        sowingsWithReview: openSowings.filter((s) => s.germinatedQuantity != null).length,
+        sowingsWithoutProduction: production.filter((e) => e == null).length,
         // Retrasadas primero, luego las que germinan hoy o en 1-2 días.
         attention: openSowings
             .map((s) => ({ ...s, timing: getGerminationTiming(s) }))

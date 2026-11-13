@@ -32,6 +32,101 @@
     text-decoration: none;
 }
 
+.dash-live {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--color-primary-soft);
+    border: 1px solid #cfe2d6;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+}
+
+.dash-live-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    box-shadow: 0 0 0 4px var(--color-primary-ring);
+}
+
+.dash-live-dot.busy {
+    animation: dash-live-pulse 1s ease-in-out infinite;
+}
+
+.dash-live-copy {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 180px;
+}
+
+.dash-live-copy b {
+    font-size: 13px;
+}
+
+.dash-live-copy span {
+    color: var(--color-muted);
+    font-size: 12.5px;
+}
+
+.dash-live-warning {
+    color: var(--color-warning);
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.dash-live-button {
+    margin-left: auto;
+}
+
+.dash-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dash-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.dash-section-head h2 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.2;
+}
+
+.dash-section-head p {
+    margin: 3px 0 0;
+    color: var(--color-muted);
+    font-size: 13px;
+}
+
+.dash-stats-commercial .dash-stat::before {
+    background: var(--color-warning);
+}
+
+@media (min-width: 1360px) {
+    .dash-stats.dash-stats-commercial {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+@keyframes dash-live-pulse {
+    50% {
+        opacity: 0.35;
+        transform: scale(0.8);
+    }
+}
+
 .dash-box {
     position: relative;
     display: flex;
@@ -350,6 +445,15 @@
 }
 
 @media (max-width: 640px) {
+    .dash-live {
+        padding: 12px 14px;
+    }
+
+    .dash-live-button {
+        width: 100%;
+        margin-left: 0;
+    }
+
     .dash-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
@@ -363,6 +467,10 @@
         font-size: 24px;
     }
 
+    .dash-stats-commercial .dash-stat:last-child {
+        grid-column: 1 / -1;
+    }
+
     .dash-trace-row {
         max-width: none;
         flex-basis: 100%;
@@ -370,5 +478,11 @@
 
     .dash-bi-frame {
         height: 480px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dash-live-dot.busy {
+        animation: none;
     }
 }
