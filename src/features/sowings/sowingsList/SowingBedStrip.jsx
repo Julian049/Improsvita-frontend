@@ -27,7 +27,7 @@ export const SowingBedStrip = ({ beds, sowings, selectedBedId, onSelect, onClear
                         onClick={() => onSelect(bed.bedId)}
                     >
                         <b>
-                            {bed.code}
+                            <span>{bed.code}</span>
                             <small>{Math.round(percent)}%</small>
                         </b>
                         <div className={`sowing-fill ${level}`}>
