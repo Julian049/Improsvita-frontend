@@ -29,7 +29,17 @@ function getPageMeta(pathname) {
     return page ?? { title: 'Improsvita', subtitle: 'Gestión de vivero' };
 }
 
-function Header({ isMenuOpen, onToggleMenu }) {
+function AssistantIcon() {
+    return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" />
+            <path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15Z" />
+        </svg>
+    );
+}
+
+function Header({ isMenuOpen, onToggleMenu, onOpenAssistant }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const { pathname } = useLocation();
@@ -61,6 +71,15 @@ function Header({ isMenuOpen, onToggleMenu }) {
             </div>
 
             <div className="header-user">
+                <button
+                    type="button"
+                    className="assistant-launch"
+                    onClick={onOpenAssistant}
+                    aria-label="Abrir asistente"
+                >
+                    <AssistantIcon />
+                    <span className="assistant-launch-label">Asistente</span>
+                </button>
                 <NotificationBell />
                 <div className="user-chip">
                     <span className="user-avatar" aria-hidden="true">{initial}</span>
